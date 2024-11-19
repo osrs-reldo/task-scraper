@@ -55,27 +55,5 @@ export class EnumService {
     const allEnums: Enum[] = await Enum.all(this.cacheProvider);
     const structEnums: Enum[] = allEnums.filter((e) => e.valueTypeChar === ScriptVarType.struct.char);
     return structEnums;
-  }
-
-  // Add this method for getting category names
-  public async getCategoryName(enumId: number, categoryId: number): Promise<string> {
-    if (!enumId || !categoryId) {
-      return 'Unknown';
-    }
-  
-    // Load the enum map using the enum ID
-    const categoryEnum = await this.getEnum(enumId);
-    if (!categoryEnum || !categoryEnum.map) {
-      return 'Unknown';
-    }
-  
-    // Retrieve the category name
-    const categoryValue = categoryEnum.map.get(categoryId);
-  
-    // Always return a string
-    return categoryValue ? String(categoryValue) : 'Unknown';
-  }
-  
-  
+  }  
 }
-

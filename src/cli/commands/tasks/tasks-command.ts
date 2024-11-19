@@ -55,35 +55,45 @@ export class TasksCommand {
       allTaskStructs.push(taskStruct);
     }
   
-    const allTasksFormatted: ITask[] = allTaskStructs.map((s, i) => {
-      const categoryValue = s.params.get(PARAM_ID.CA_CATEGORY_ID) as number;
-  
-      return {
-        structId: s.id, 
-        sortId: i,      
-        id: '' + (s.params.get(PARAM_ID.CA_VARBIT_INDEX) as number),
-        monster: '' + (s.params.get(PARAM_ID.CA_MONSTER_ID) as number),
-        name: s.params.get(PARAM_ID.CA_NAME) as string,
-        description: s.params.get(PARAM_ID.CA_DESCRIPTION) as string,
-        category: categoryEnum.map.get(categoryValue) || 'Unknown',
-        tier: this.getLegacyTier(s.params.get(PARAM_ID.CA_TIER_ID) as number),
-        clientSortId: '' + i,
-      };
-    });
-  
-    if (options.json) {
-      this.writeToFile(allTasksFormatted, 'combat.json');
-    } else {
-      console.log(JSON.stringify(allTasksFormatted, replacer));
-    }
-  
-    return allTasksFormatted; 
+    
+    let allTasksFormatted: any[] = [];
+
+if (options.legacy) {
+  allTasksFormatted = allTaskStructs.map((s, i) => {
+    const categoryValue = s.params.get(PARAM_ID.CA_CATEGORY_ID) as number;
+
+    return {
+      id: '' + (s.params.get(PARAM_ID.CA_VARBIT_INDEX) as number),
+      monster: '' + (s.params.get(PARAM_ID.CA_MONSTER_ID) as number),
+      name: s.params.get(PARAM_ID.CA_NAME) as string,
+      description: s.params.get(PARAM_ID.CA_DESCRIPTION) as string,
+      category: categoryEnum.map.get(categoryValue) || 'Unknown',
+      tier: this.getLegacyTier(s.params.get(PARAM_ID.CA_TIER_ID) as number),
+      clientSortId: '' + i,
+    };
+  });
+} else {
+  allTasksFormatted = allTaskStructs.map((s, i) => {
+    return {
+      structId: s.id,
+      sortId: i,
+    } as ITask;
+  });
+}
+
+if (options.json) {
+  this.writeToFile(allTasksFormatted, 'combat.json');
+} else {
+  console.log(JSON.stringify(allTasksFormatted, replacer));
+}
+
+return allTasksFormatted;
   }
   
   
 
   public async handleLeagues4(options: any): Promise<ITask[]> {
-    // console.log('handleLeagues4 invoked with options:', options);
+    console.debug('handleLeagues4 invoked with options:', options);
   
     const structId: ParamID = PARAM_ID.LEAGUE_VARBIT_INDEX;
     const categoryParamId: ParamID = PARAM_ID.LEAGUE_CATEGORY_ID;
@@ -144,10 +154,7 @@ export class TasksCommand {
     }
   
     return allAsTasks;
-  }
-  
-  
-  
+  }  
 
   private writeToFile(obj: any, fileNameAndPath: string): void {
     writeFileSync('./out/' + fileNameAndPath, JSON.stringify(obj, null, 2));
