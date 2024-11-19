@@ -39,7 +39,8 @@ export class TasksCommand {
 
   public async handleCombatTasks(options: any): Promise<ITask[]> {
     const orderedStructIds: number[] = [];
-
+    const categoryEnum = await this.enumService.getEnum(3413); // Preload category enum
+  
     const difficultyEnums: number[] = [3981, 3982, 3983, 3984, 3985, 3986];
     for (let enumId of difficultyEnums) {
       const orderedDifficultyStructIds: Map<number, string | number> = (await this.enumService.getEnum(enumId)).map;
@@ -47,93 +48,106 @@ export class TasksCommand {
         orderedStructIds.push(structId as number);
       }
     }
-
+  
     const allTaskStructs: Struct[] = [];
     for (let structId of orderedStructIds) {
       const taskStruct: Struct = await this.structService.getStruct(structId);
       allTaskStructs.push(taskStruct);
     }
-
-    let allTasksFormatted: any[] = [];
-
-    if (options.legacy) {
-      allTasksFormatted = allTaskStructs.map((s, i) => {
-        const out = {
-          id: '' + (s.params.get(PARAM_ID.CA_VARBIT_INDEX) as number),
-          monster: '' + (s.params.get(PARAM_ID.CA_MONSTER_ID) as number),
-          name: s.params.get(PARAM_ID.CA_NAME) as string,
-          description: s.params.get(PARAM_ID.CA_DESCRIPTION) as string,
-          category: '',
-          tier: this.getLegacyTier(s.params.get(PARAM_ID.CA_TIER_ID) as number),
-          clientSortId: '' + i,
-        };
-        return out;
-      });
-    } else {
-      allTasksFormatted = allTaskStructs.map((s, i) => {
-        const out: ITask = {
-          structId: s.id,
-          sortId: i,
-        };
-        return out;
-      });
-    }
-
+  
+    const allTasksFormatted: ITask[] = allTaskStructs.map((s, i) => {
+      const categoryValue = s.params.get(PARAM_ID.CA_CATEGORY_ID) as number;
+  
+      return {
+        structId: s.id, 
+        sortId: i,      
+        id: '' + (s.params.get(PARAM_ID.CA_VARBIT_INDEX) as number),
+        monster: '' + (s.params.get(PARAM_ID.CA_MONSTER_ID) as number),
+        name: s.params.get(PARAM_ID.CA_NAME) as string,
+        description: s.params.get(PARAM_ID.CA_DESCRIPTION) as string,
+        category: categoryEnum.map.get(categoryValue) || 'Unknown',
+        tier: this.getLegacyTier(s.params.get(PARAM_ID.CA_TIER_ID) as number),
+        clientSortId: '' + i,
+      };
+    });
+  
     if (options.json) {
       this.writeToFile(allTasksFormatted, 'combat.json');
     } else {
       console.log(JSON.stringify(allTasksFormatted, replacer));
     }
-    return allTasksFormatted;
+  
+    return allTasksFormatted; 
   }
+  
+  
 
   public async handleLeagues4(options: any): Promise<ITask[]> {
-    const structId: ParamID = 873 as ParamID;
+    // console.log('handleLeagues4 invoked with options:', options);
+  
+    const structId: ParamID = PARAM_ID.LEAGUE_VARBIT_INDEX;
+    const categoryParamId: ParamID = PARAM_ID.LEAGUE_CATEGORY_ID;
+    const tierParamId: ParamID = PARAM_ID.LEAGUE_TIER_ID;
+  
+    // Define tierMap (could probably move this not here)
+    const tierMap = {
+      1: 'Easy',
+      2: 'Medium',
+      3: 'Hard',
+      4: 'Elite',
+      5: 'Master',
+      6: 'Grandmaster',
+    };
+  
+    // Fetch category enum (3413)
+    const categoryEnum = await this.enumService.getEnum(3413);
+    
+    // Ensure the categories are read and still valid from previous year.
+    console.log('Loaded categoryEnum:', Array.from(categoryEnum.map.entries()));
+
+  
+    // Sort function for tasks
     const sortFunction = (a: Struct, b: Struct) => {
       const aSort = a.params.get(structId) as number;
       const bSort = b.params.get(structId) as number;
       return aSort - bSort;
     };
-    const tierParamId: ParamID = 1852 as ParamID;
-    const easy: Struct[] = (await this.structService.findByParam(tierParamId, 1)).sort(sortFunction);
-    const medium: Struct[] = (await this.structService.findByParam(tierParamId, 2)).sort(sortFunction);
-    const hard: Struct[] = (await this.structService.findByParam(tierParamId, 3)).sort(sortFunction);
-    const elite: Struct[] = (await this.structService.findByParam(tierParamId, 4)).sort(sortFunction);
-    const master: Struct[] = (await this.structService.findByParam(tierParamId, 5)).sort(sortFunction);
+  
+    const easy = (await this.structService.findByParam(tierParamId, 1)).sort(sortFunction);
+    const medium = (await this.structService.findByParam(tierParamId, 2)).sort(sortFunction);
+    const hard = (await this.structService.findByParam(tierParamId, 3)).sort(sortFunction);
+    const elite = (await this.structService.findByParam(tierParamId, 4)).sort(sortFunction);
+    const master = (await this.structService.findByParam(tierParamId, 5)).sort(sortFunction);
+  
     const all = [...easy, ...medium, ...hard, ...elite, ...master];
     let allAsTasks: any[] = [];
-
-    if (options.legacy) {
-      allAsTasks = all.map((s, i) => {
-        const out = {
-          id: '' + (s.params.get(structId) as number),
-          monster: '',
-          name: s.params.get(874 as ParamID) as string,
-          description: s.params.get(875 as ParamID) as string,
-          category: '',
-          tier: '',
-          clientSortId: '' + i,
-        };
-        return out;
-      });
-    } else {
-      allAsTasks = all.map((s, i) => {
-        const out: ITask = {
-          structId: s.params.get(structId) as number,
-          sortId: i,
-        };
-        return out;
-      });
-    }
-
+  
+    allAsTasks = all.map((s, i) => {
+      const categoryValue = s.params.get(categoryParamId) as number;
+      const tierValue = s.params.get(tierParamId) as number;
+    
+      return {
+        id: '' + (s.params.get(structId) as number),
+        name: s.params.get(PARAM_ID.LEAGUE_NAME) as string,
+        description: s.params.get(PARAM_ID.LEAGUE_DESCRIPTION) as string,
+        category: categoryEnum.map.get(categoryValue) || 'Unknown',
+        tier: tierMap[tierValue] || 'Unknown',
+        clientSortId: '' + i,
+      };
+    });
+    
+  
     if (options.json) {
       this.writeToFile(allAsTasks, 'leagues_4.json');
     } else {
-      console.log(JSON.stringify(allAsTasks, replacer));
+      console.log(JSON.stringify(allAsTasks, replacer, 2));
     }
-
+  
     return allAsTasks;
   }
+  
+  
+  
 
   private writeToFile(obj: any, fileNameAndPath: string): void {
     writeFileSync('./out/' + fileNameAndPath, JSON.stringify(obj, null, 2));
