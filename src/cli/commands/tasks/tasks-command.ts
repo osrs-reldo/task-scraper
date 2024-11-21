@@ -55,7 +55,6 @@ export class TasksCommand {
       allTaskStructs.push(taskStruct);
     }
   
-    
     let allTasksFormatted: any[] = [];
 
 if (options.legacy) {
@@ -70,6 +69,7 @@ if (options.legacy) {
       category: categoryEnum.map.get(categoryValue) || 'Unknown',
       tier: this.getLegacyTier(s.params.get(PARAM_ID.CA_TIER_ID) as number),
       clientSortId: '' + i,
+      area: s.params.get(PARAM_ID.LEAGUE_AREA_ID) as string,
     };
   });
 } else {
@@ -89,15 +89,15 @@ if (options.json) {
 
 return allTasksFormatted;
   }
-  
-  
 
-  public async handleLeagues4(options: any): Promise<ITask[]> {
+    public async handleLeagues4(options: any): Promise<ITask[]> {
     console.debug('handleLeagues4 invoked with options:', options);
   
     const structId: ParamID = PARAM_ID.LEAGUE_VARBIT_INDEX;
     const categoryParamId: ParamID = PARAM_ID.LEAGUE_CATEGORY_ID;
+    const areaParamId: ParamID = PARAM_ID.LEAGUE_AREA_ID;
     const tierParamId: ParamID = PARAM_ID.LEAGUE_TIER_ID;
+    
   
     // Define tierMap (could probably move this not here)
     const tierMap = {
@@ -109,11 +109,11 @@ return allTasksFormatted;
       6: 'Grandmaster',
     };
   
-    // Fetch category enum (3413)
     const categoryEnum = await this.enumService.getEnum(3413);
+    const areaEnum = await this.enumService.getEnum(3412);
     
     // Ensure the categories are read and still valid from previous year.
-    console.log('Loaded categoryEnum:', Array.from(categoryEnum.map.entries()));
+    console.log('Loaded areaEnum:', Array.from(areaEnum.map.entries()));
 
   
     // Sort function for tasks
@@ -134,6 +134,7 @@ return allTasksFormatted;
   
     allAsTasks = all.map((s, i) => {
       const categoryValue = s.params.get(categoryParamId) as number;
+      const areaValue = s.params.get(areaParamId) as number;
       const tierValue = s.params.get(tierParamId) as number;
     
       return {
@@ -143,6 +144,7 @@ return allTasksFormatted;
         category: categoryEnum.map.get(categoryValue) || 'Unknown',
         tier: tierMap[tierValue] || 'Unknown',
         clientSortId: '' + i,
+        area: areaEnum.map.get(areaValue) || 'Unknown',
       };
     });
     
