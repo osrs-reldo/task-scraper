@@ -139,6 +139,7 @@ return allTasksFormatted;
     
       return {
         id: '' + (s.params.get(structId) as number),
+        lookupstruct: s.id,
         name: s.params.get(PARAM_ID.LEAGUE_NAME) as string,
         description: s.params.get(PARAM_ID.LEAGUE_DESCRIPTION) as string,
         category: categoryEnum.map.get(categoryValue) || 'Unknown',
