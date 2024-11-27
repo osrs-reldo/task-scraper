@@ -1,11 +1,12 @@
 import { ParamID, Struct } from '@abextm/cache2';
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import { readFileSync, writeFileSync } from 'fs';
 import { PARAM_ID } from '../../../core/data/param-ids';
 import { replacer } from '../../../core/json-replacer';
 import { EnumService } from '../../../core/services/enum/enum.service';
 import { StructService } from '../../../core/services/struct/struct.service';
-import { ITask } from '../../../core/types/task-mockup.interface';
+import { ITask, ITaskSkill } from '../../../core/types/task-mockup.interface';
 import { IInteractiveTaskExtractResult } from './interactive-task-extract-result.interface';
 import { InteractiveTaskService } from './interactive-task.service';
 
@@ -26,6 +27,62 @@ export class TasksCommand {
       console.log(results);
     }
     return results;
+  }
+
+  public async handleGenerateFrontendTasks(
+    jsonFilename: string,
+    nameParamId: ParamID,
+    descriptionParamId: ParamID,
+    categoryParamId: ParamID,
+    tierParamId: ParamID,
+    areaParamId: ParamID,
+  ) {
+    interface IFrontendTask {
+      id: string;
+      label: string;
+      description: string;
+      skillReqs: { skill: string; level: number }[];
+      regions: string[];
+      difficulty: null; // placeholders
+      category: null; // placeholders
+      subcategory: null; // placeholders
+      prerequisite: null; // placeholders
+    }
+
+    const jsonResponse = await axios.get(
+      `https://raw.githubusercontent.com/osrs-reldo/task-json-store/refs/heads/main/tasks/${jsonFilename}.min.json`,
+    );
+    const taskStructData: ITask[] = jsonResponse.data;
+
+    const transformSkills = (taskSkills: ITaskSkill[]): { skill: string; level: number }[] =>
+      taskSkills.map((taskSkill) => ({
+        skill: taskSkill.skill.charAt(0).toUpperCase() + taskSkill.skill.slice(1).toLowerCase(),
+        level: taskSkill.level,
+      }));
+
+    const frontendTasks: Record<string, IFrontendTask> = {};
+    for (const taskData of taskStructData) {
+      const struct: Struct = await this.structService.getStruct(taskData.structId);
+      const name: string = struct.params.get(nameParamId).toString();
+      const description: string = struct.params.get(descriptionParamId).toString();
+      const categoryId: number = struct.params.get(categoryParamId) as number;
+      const tierId: number = struct.params.get(tierParamId) as number;
+      const areaId: number = struct.params.get(areaParamId) as number;
+      const frontendTask: IFrontendTask = {
+        id: String(taskData.sortId),
+        label: name,
+        description: description,
+        skillReqs: taskData.skills ? transformSkills(taskData.skills) : [],
+        regions: [],
+        difficulty: null,
+        category: null,
+        subcategory: null,
+        prerequisite: null,
+      };
+      frontendTasks[frontendTask.id] = frontendTask;
+    }
+
+    console.log(JSON.stringify(frontendTasks, null, 2));
   }
 
   public async handleCompareCombat() {
@@ -158,4 +215,3 @@ export class TasksCommand {
     }
   }
 }
-

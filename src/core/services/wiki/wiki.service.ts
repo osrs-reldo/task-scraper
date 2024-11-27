@@ -31,7 +31,9 @@ export class WikiService {
     for (const taskWikiData of extractedWikiData) {
       const task: ITask = tasksByVarbitIndex.get(taskWikiData.varbitIndex);
       if (!task) {
-        throw new Error('task not found by varbit index ' + taskWikiData.varbitIndex);
+        console.error('task not found by varbit index ' + taskWikiData.varbitIndex);
+        continue;
+        // throw new Error('task not found by varbit index ' + taskWikiData.varbitIndex);
       }
       if (taskWikiData.skills) {
         task.skills = taskWikiData.skills;

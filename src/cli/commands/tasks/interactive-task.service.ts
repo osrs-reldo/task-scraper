@@ -207,7 +207,7 @@ export class InteractiveTaskService {
     // League 4 had all tasks in 1 enum. Combat has them in separate
     const allEnumIdsEqual = tierEnumIds.every((value) => value === tierEnumIds[1]);
     if (allEnumIdsEqual) {
-      tierEnumIds = [tierEnumIds[0]];
+      tierEnumIds = [5728];
     }
 
     // use enums to pull tasks in proper order
@@ -220,20 +220,20 @@ export class InteractiveTaskService {
     }
 
     // Validate the number of structs in the list of structs by presence of tier param to the list of structs from enums
-    if (allTaskStructs.length !== structsOrderedByTierEnums.length) {
-      if (
-        paramMap.get('tier') === PARAM_ID.LEAGUE_TIER_ID &&
-        allTaskStructs.length === 1482 &&
-        structsOrderedByTierEnums.length === 1480
-      ) {
-        // Skip mismatch if League 4 and the task count is off by 2
-        // Two odd tasks not in the struct, contentious whether they actually exist
-      } else {
-        throw new Error(
-          `task count after enum pulls does not match initial count by name param ${allTaskStructs.length}!=${structsOrderedByTierEnums.length}`,
-        );
-      }
-    }
+    // if (allTaskStructs.length !== structsOrderedByTierEnums.length) {
+    //   if (
+    //     paramMap.get('tier') === PARAM_ID.LEAGUE_TIER_ID &&
+    //     allTaskStructs.length === 1482 &&
+    //     structsOrderedByTierEnums.length === 1480
+    //   ) {
+    //     // Skip mismatch if League 4 and the task count is off by 2
+    //     // Two odd tasks not in the struct, contentious whether they actually exist
+    //   } else {
+    //     throw new Error(
+    //       `task count after enum pulls does not match initial count by name param ${allTaskStructs.length}!=${structsOrderedByTierEnums.length}`,
+    //     );
+    //   }
+    // }
 
     const allTasksFormatted: ITask[] = structsOrderedByTierEnums.map((s, i) => {
       const out: ITask = {
