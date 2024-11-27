@@ -31,21 +31,22 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@abextm/cache2": "^0.1.1",
+    "@abextm/cache2": "^0.1.2",
     "@inquirer/prompts": "^5.5.0",
     "@nestjs/common": "^8.0.0",
     "@nestjs/core": "^8.0.0",
     "@nestjs/platform-express": "^8.0.0",
+    "axios": "^1.7.8",
     "cheerio": "^1.0.0-rc.12",
     "commander": "^12.1.0",
+    "esbuild": "^0.24.0",
     "fs-extra": "^11.2.0",
+    "pg": "^8.13.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@babel/preset-env": "^7.25.4",
     "@babel/preset-typescript": "^7.24.7",
     "@nestjs/cli": "^8.0.0",
     "@nestjs/schematics": "^8.0.0",

@@ -55,6 +55,5 @@ export class EnumService {
     const allEnums: Enum[] = await Enum.all(this.cacheProvider);
     const structEnums: Enum[] = allEnums.filter((e) => e.valueTypeChar === ScriptVarType.struct.char);
     return structEnums;
-  }
+  }  
 }
-
