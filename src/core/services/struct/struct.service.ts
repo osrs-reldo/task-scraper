@@ -41,5 +41,16 @@ export class StructService {
     });
     return found;
   }
+  public async getStructs(ids: number[]): Promise<Struct[]> {
+    console.info('getStructs', ids);
+    const structs: Struct[] = [];
+    for (const id of ids) {
+      const struct = await Struct.load(this.cacheProvider, id);
+      if (struct) {
+        structs.push(struct);
+      }
+    }
+    return structs;
+  }
 }
 
