@@ -15,25 +15,29 @@ export async function getCommandInstance<TModule>(command: any, module: TModule)
   const rootOptions = program.opts();
   
   // Only update cache for non-cache commands (to avoid recursion)
-  if (command !== CacheCommand) {
-    const targetCommit = rootOptions.commit;
-    
-    if (targetCommit) {
-      // Validate the specific commit if provided
-      const isValidCommit = await cacheService.validateCommitHash(targetCommit);
-      if (!isValidCommit) {
-        console.error(`Invalid commit hash: ${targetCommit}. Commit not found in repository.`);
-        process.exit(1);
-      }
-      console.log(`Updating cache to commit ${targetCommit}...`);
-      await cacheService.updateCache(targetCommit);
-    } else {
-      // Update to latest commit
-      console.log('Updating cache to latest commit...');
-      await cacheService.updateCache();
-    }
-    console.log('Cache update complete. Continuing with command...');
+  if (command === CacheCommand) {
+    console.info('Running cache command, skipping cache update.');
+    return app.get(command);
   }
+  
+  const targetCommit = rootOptions.commit ?? await cacheService.getLatestCommitHash();
+  const currentLocalCommit = cacheService.getLocalCommitHash();
+  console.info(`Current local cache commit: ${currentLocalCommit}`);
+  console.info(`Target commit for cache update: ${targetCommit}`);
+
+  if (currentLocalCommit === targetCommit) {
+    console.info('Cache is already up to date with the specified commit.');
+    return app.get(command);
+  }
+
+  const isValidCommit = await cacheService.validateCommitHash(targetCommit);
+  if (!isValidCommit) {
+    console.error(`Invalid commit hash: ${targetCommit}. Commit not found in repository.`);
+    process.exit(1);
+  }
+  console.log(`Updating cache to commit ${targetCommit}...`);
+  await cacheService.updateCache(targetCommit);
+  console.log('Cache update complete. Continuing with command...');
 
   return app.get(command);
 }

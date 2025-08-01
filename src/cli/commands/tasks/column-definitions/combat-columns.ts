@@ -5,5 +5,5 @@ export const COMBAT_COLUMNS: IColumnDefinitions = {
   descriptionColumnId: 2,
   requirementsColumnId: null,
   pointsColumnId: null,
-  completionColumnId: null,
+  completionColumnId: 5,
 };
