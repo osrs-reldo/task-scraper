@@ -1,0 +1,115 @@
+import { Injectable } from '@nestjs/common';
+import { ScriptService } from '../../../core/services/script/script.service';
+
+@Injectable()
+export class ScriptCommand {
+  constructor(private readonly scriptService: ScriptService) {}
+
+  public async handleList(options: any): Promise<void> {
+    console.log('📜 Loading script list...');
+    
+    if (options.stats) {
+      const stats = await this.scriptService.getScriptStatistics();
+      console.log('\n📊 Script Statistics:');
+      console.log(`Total scripts: ${stats.totalScripts}`);
+      console.log(`Named scripts: ${stats.namedScripts}`);
+      console.log(`Average code length: ${stats.avgCodeLength} instructions`);
+      console.log(`Average argument count: ${stats.avgArgumentCount}`);
+      return;
+    }
+
+    const metadata = await this.scriptService.getAllScriptMetadata();
+    
+    if (options.named) {
+      const namedScripts = metadata.filter(s => s.name);
+      console.log(`\n📝 Named Scripts (${namedScripts.length}):`);
+      namedScripts.forEach(script => {
+        console.log(`  ${script.id}: ${script.name} (${script.codeLength} instructions, ${script.argumentCountInt + script.argumentCountObject} args)`);
+      });
+    } else {
+      console.log(`\n📋 All Scripts (${metadata.length}):`);
+      metadata.slice(0, options.limit || 20).forEach(script => {
+        const name = script.name ? ` "${script.name}"` : '';
+        console.log(`  ${script.id}:${name} (${script.codeLength} instructions, ${script.argumentCountInt + script.argumentCountObject} args)`);
+      });
+      
+      if (metadata.length > (options.limit || 20)) {
+        console.log(`  ... and ${metadata.length - (options.limit || 20)} more (use --limit to see more)`);
+      }
+    }
+  }
+
+  public async handleShow(scriptId: number, options: any): Promise<void> {
+    console.log(`🔍 Loading script ${scriptId}...`);
+    
+    const parsed = await this.scriptService.getParsedScript(scriptId);
+    if (!parsed) {
+      console.log(`❌ Script ${scriptId} not found`);
+      return;
+    }
+
+    const { metadata, instructions } = parsed;
+    
+    console.log(`\n📜 Script ${metadata.id}:`);
+    if (metadata.name) {
+      console.log(`Name: ${metadata.name}`);
+    }
+    console.log(`Local variables: ${metadata.localCountInt} int, ${metadata.localCountObject} object`);
+    console.log(`Arguments: ${metadata.argumentCountInt} int, ${metadata.argumentCountObject} object`);
+    console.log(`Instructions: ${metadata.codeLength} (parsed: ${instructions.length})`);
+
+    if (options.instructions || options.full) {
+      console.log(`\n🔧 Instructions:`);
+      instructions.slice(0, options.instructionLimit || 50).forEach((inst, idx) => {
+        const operandStr = inst.operand !== undefined ? ` ${inst.operand}` : '';
+        console.log(`  ${idx.toString().padStart(3, '0')}: ${inst.opcode}${operandStr}`);
+      });
+      
+      if (instructions.length > (options.instructionLimit || 50)) {
+        console.log(`  ... and ${instructions.length - (options.instructionLimit || 50)} more instructions`);
+      }
+    }
+
+    if (options.raw) {
+      console.log(`\n📊 Raw Data (${metadata.rawData.length} bytes):`);
+      console.log(`First 100 bytes: ${Array.from(metadata.rawData.slice(0, 100)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+    }
+  }
+
+  public async handleSearch(searchTerm: string, options: any): Promise<void> {
+    console.log(`🔍 Searching scripts for: "${searchTerm}"`);
+    
+    const results = await this.scriptService.findScriptsByName(searchTerm);
+    
+    if (results.length === 0) {
+      console.log('❌ No scripts found matching the search term');
+      return;
+    }
+
+    console.log(`\n✅ Found ${results.length} script(s):`);
+    results.forEach(script => {
+      console.log(`  ${script.id}: ${script.name} (${script.codeLength} instructions)`);
+    });
+  }
+
+  public async handleIds(options: any): Promise<void> {
+    console.log('📋 Loading script IDs...');
+    
+    const ids = await this.scriptService.getAllScriptIds();
+    
+    console.log(`\n📊 Found ${ids.length} scripts:`);
+    
+    if (options.range) {
+      console.log(`Range: ${Math.min(...ids)} - ${Math.max(...ids)}`);
+    }
+    
+    if (options.list) {
+      const sortedIds = ids.sort((a, b) => a - b);
+      console.log('IDs:', sortedIds.slice(0, options.limit || 100).join(', '));
+      
+      if (sortedIds.length > (options.limit || 100)) {
+        console.log(`... and ${sortedIds.length - (options.limit || 100)} more`);
+      }
+    }
+  }
+}

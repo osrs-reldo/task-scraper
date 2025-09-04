@@ -2,6 +2,7 @@ import { CacheService } from '../core/services/cache/cache.service';
 import { addCacheCommand } from './commands/cache/add-cache-command';
 import { CacheCommand } from './commands/cache/cache-command';
 import { addEnumCommand } from './commands/enum/add-enum-command';
+import { addScriptCommand } from './commands/script/add-script-command';
 import { addStructCommand } from './commands/struct/add-struct-command';
 import { addTasksCommand } from './commands/tasks/add-tasks-command';
 import { addWikiCommand } from './commands/wiki/add-wiki-command';
@@ -54,6 +55,7 @@ addTasksCommand('tasks', program);
 addEnumCommand('enum', program);
 addCacheCommand('cache', program);
 addWikiCommand('wiki', program);
+addScriptCommand('script', program);
 
 (async () => {
   try {
