@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ScriptService } from '../../../core/services/script/script.service';
+import { Rs2asmFormatter } from '../../../core/services/script/rs2asm-formatter';
 
 @Injectable()
 export class ScriptCommand {
@@ -61,8 +62,8 @@ export class ScriptCommand {
     if (options.instructions || options.full) {
       console.log(`\n🔧 Instructions:`);
       instructions.slice(0, options.instructionLimit || 50).forEach((inst, idx) => {
-        const operandStr = inst.operand !== undefined ? ` ${inst.operand}` : '';
-        console.log(`  ${idx.toString().padStart(3, '0')}: ${inst.opcode}${operandStr}`);
+        const operandStr = inst.operand !== undefined ? ` ${Rs2asmFormatter.formatOperand(inst.operand)}` : '';
+        console.log(`  ${idx.toString().padStart(3, '0')}: ${inst.name}${operandStr}`);
       });
       
       if (instructions.length > (options.instructionLimit || 50)) {
@@ -73,6 +74,44 @@ export class ScriptCommand {
     if (options.raw) {
       console.log(`\n📊 Raw Data (${metadata.rawData.length} bytes):`);
       console.log(`First 100 bytes: ${Array.from(metadata.rawData.slice(0, 100)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+    }
+
+    if (options.rs2asm || options.asm) {
+      console.log(`\n🔧 RS2ASM Assembly:`);
+      const rs2asm = await this.scriptService.getScriptAsRs2asm(scriptId, {
+        includeMetadata: true,
+        includeComments: true,
+        includeAddresses: options.addresses || false,
+      });
+      if (rs2asm) {
+        console.log(rs2asm);
+      } else {
+        console.log('❌ Failed to generate rs2asm output');
+      }
+    }
+  }
+
+  public async handleDecompile(scriptId: number, options: any): Promise<void> {
+    console.log(`🔧 Decompiling script ${scriptId} to rs2asm...`);
+    
+    const rs2asm = await this.scriptService.getScriptAsRs2asm(scriptId, {
+      includeMetadata: options.metadata !== false,
+      includeComments: options.comments !== false,
+      includeAddresses: options.addresses || false,
+    });
+    
+    if (!rs2asm) {
+      console.log(`❌ Script ${scriptId} not found or could not be decompiled`);
+      return;
+    }
+
+    if (options.output) {
+      // Save to file (would need fs module)
+      console.log(`💾 Saving to ${options.output}...`);
+      // TODO: Implement file saving
+      console.log('File saving not yet implemented');
+    } else {
+      console.log(rs2asm);
     }
   }
 
