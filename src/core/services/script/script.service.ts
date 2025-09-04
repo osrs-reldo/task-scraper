@@ -3,13 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Reader } from '@abextm/cache2';
 import { 
   OpcodeRegistry, 
-  ScriptInstruction, 
-  SwitchCase,
-  LocalDomain,
-  LocalReference,
-  VarPlayerReference,
-  VarPlayerBitReference,
-  VarClientReference
+  ScriptInstruction
 } from './commands';
 import { Rs2asmFormatter, Rs2asmFormatOptions } from './rs2asm-formatter';
 

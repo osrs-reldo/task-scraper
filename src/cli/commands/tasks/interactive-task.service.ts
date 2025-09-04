@@ -5,6 +5,7 @@ import { replacer } from '../../../core/json-replacer';
 import { EnumService } from '../../../core/services/enum/enum.service';
 import { StructService } from '../../../core/services/struct/struct.service';
 import { WikiService } from '../../../core/services/wiki/wiki.service';
+import { ScriptAnalysisService } from '../../../core/services/script/script-analysis.service';
 import { ITask } from '../../../core/types/task-mockup.interface';
 import { ITaskType } from '../../../core/types/task-type-mockup.interface';
 import { InteractivePrompt } from '../../interactive-prompt.util';
@@ -20,6 +21,7 @@ export class InteractiveTaskService {
     private structService: StructService,
     private enumService: EnumService,
     private wikiService: WikiService,
+    private scriptAnalysisService: ScriptAnalysisService,
   ) {}
 
   public async promptTaskExtraction(options: any): Promise<IInteractiveTaskExtractResult> {
@@ -67,13 +69,18 @@ export class InteractiveTaskService {
     const name: string = options.name ?? (await InteractivePrompt.input('enter the task type name'));
     const description: string = options.description ?? (await InteractivePrompt.input('enter a task type description'));
     const taskJsonName: string = options.taskJsonName ?? (await InteractivePrompt.input('enter a task json name'));
+    
+    // Get script ID first, then analyze it to automatically extract varps
+    const taskCompletedScriptId = await this.promptTaskCompletedScriptId();
+    const taskVarps = await this.extractTaskVarpsFromScript(taskCompletedScriptId);
+    
     const taskTypeDefinition: ITaskType = {
       name,
       description,
       isEnabled: true,
       taskJsonName,
       filters: [], // defined after task type definition
-      taskVarps: await this.promptTaskVarps(),
+      taskVarps,
       otherVarps: [],
       varbits: [],
       intParamMap: this.getIntParamMap(foundTaskStruct, paramMap),
@@ -81,7 +88,7 @@ export class InteractiveTaskService {
       intEnumMap: undefined, // unused by plugin
       stringEnumMap: await this.promptStringEnumMap(),
       tierSpriteIdMap: await this.promptTierSpriteIdMap(),
-      taskCompletedScriptId: await this.promptTaskCompletedScriptId(),
+      taskCompletedScriptId,
     };
 
     console.log('interactive task extraction complete!');
@@ -89,6 +96,30 @@ export class InteractiveTaskService {
       taskType: taskTypeDefinition,
       tasks: allTasksWithWikiData,
     };
+  }
+
+  private async extractTaskVarpsFromScript(scriptId: number): Promise<number[]> {
+    console.log(`Analyzing script ${scriptId} to extract task varps...`);
+    try {
+      const taskVarps = await this.scriptAnalysisService.generateTaskVarps(scriptId);
+      console.log(`Automatically extracted ${taskVarps.length} task varps: ${taskVarps.join(', ')}`);
+      
+      // Give user option to override if needed
+      const useAutomatic = await InteractivePrompt.confirm(
+        `Use automatically extracted varps? (${taskVarps.length} found)`
+      );
+      
+      if (useAutomatic) {
+        return taskVarps;
+      } else {
+        console.log('Falling back to manual input...');
+        return await this.promptTaskVarps();
+      }
+    } catch (error) {
+      console.warn(`Failed to analyze script ${scriptId}:`, error.message);
+      console.log('Falling back to manual input...');
+      return await this.promptTaskVarps();
+    }
   }
 
   private async promptTaskVarps(): Promise<number[]> {

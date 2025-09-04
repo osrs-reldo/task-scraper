@@ -105,9 +105,33 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
       }
     });
 
+  // Analyze script command
+  const analyze = new Command('analyze')
+    .description('Analyze a script to extract variable references and patterns')
+    .argument('<scriptId>', 'Script ID to analyze')
+    .option('--varps', 'Show only varp variable references')
+    .option('--vars', 'Show only var variable references')
+    .option('--detailed', 'Show detailed analysis including instruction context')
+    .action(async (scriptIdStr, options) => {
+      try {
+        const scriptId = parseInt(scriptIdStr);
+        if (isNaN(scriptId)) {
+          console.error('❌ Script ID must be a number');
+          process.exit(1);
+        }
+
+        const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
+        await scriptCommand.handleAnalyze(scriptId, options);
+      } catch (error) {
+        console.error('Error executing script analyze command:', error);
+        process.exit(1);
+      }
+    });
+
   scriptCmd.addCommand(list);
   scriptCmd.addCommand(show);
   scriptCmd.addCommand(search);
   scriptCmd.addCommand(ids);
   scriptCmd.addCommand(decompile);
+  scriptCmd.addCommand(analyze);
 }

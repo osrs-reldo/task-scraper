@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ScriptService } from '../../../core/services/script/script.service';
+import { ScriptAnalysisService } from '../../../core/services/script/script-analysis.service';
 import { Rs2asmFormatter } from '../../../core/services/script/rs2asm-formatter';
 
 @Injectable()
 export class ScriptCommand {
-  constructor(private readonly scriptService: ScriptService) {}
+  constructor(
+    private readonly scriptService: ScriptService,
+    private readonly scriptAnalysisService: ScriptAnalysisService
+  ) {}
 
   public async handleList(options: any): Promise<void> {
     console.log('📜 Loading script list...');
@@ -149,6 +153,41 @@ export class ScriptCommand {
       if (sortedIds.length > (options.limit || 100)) {
         console.log(`... and ${sortedIds.length - (options.limit || 100)} more`);
       }
+    }
+  }
+
+  public async handleAnalyze(scriptId: number, options: any): Promise<void> {
+    console.log(`🔍 Analyzing script ${scriptId}...`);
+    
+    try {
+      const analysis = await this.scriptAnalysisService.analyzeScript(scriptId);
+      
+      console.log(`\n📊 Script Analysis Results:`);
+      console.log(`Script ID: ${analysis.scriptId}`);
+      console.log(`Variable References: ${analysis.variableReferences.length}`);
+      console.log(`Varps: ${analysis.varps.length} (${analysis.varps.join(', ')})`);
+      console.log(`Varbits: ${analysis.varbits.length} (${analysis.varbits.join(', ')})`);
+      console.log(`Varcs: ${analysis.varcs.length} (${analysis.varcs.join(', ')})`);
+      
+      console.log(`\n🔍 Pattern Analysis:`);
+      console.log(`Combat Achievement Pattern: ${analysis.patterns.isCombatAchievementPattern ? '✅' : '❌'}`);
+      console.log(`Has Switch: ${analysis.patterns.hasSwitch ? '✅' : '❌'}`);
+      console.log(`Has Testbit Operations: ${analysis.patterns.hasTestbitOperations ? '✅' : '❌'}`);
+      
+      if (options.details || options.verbose) {
+        console.log(`\n📋 Variable References:`);
+        analysis.variableReferences.forEach((ref, idx) => {
+          console.log(`  ${idx + 1}. ${ref.type.toUpperCase()} ${ref.varId} (${ref.operation}) - ${ref.instruction.name}`);
+        });
+      }
+      
+      if (options.taskVarps || analysis.patterns.isCombatAchievementPattern) {
+        console.log(`\n🎯 Task Varps (for task-json):`);
+        console.log(`"taskVarps": [${analysis.varps.join(', ')}]`);
+      }
+      
+    } catch (error) {
+      console.log(`❌ Failed to analyze script ${scriptId}:`, error.message);
     }
   }
 }
