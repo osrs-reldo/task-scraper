@@ -16,6 +16,15 @@ export class StructCommand {
     console.log(struct);
   }
 
+  public async handleList(): Promise<void> {
+    const structs: Struct[] = await this.structService.getAllStructs();
+    console.log(`Found ${structs.length} structs:`);
+    structs.forEach(struct => {
+      console.log(`${struct.id}: ${struct.params.size} params`);
+    });
+    console.log(`Total: ${structs.length} structs`);
+  }
+
   public async handleFind(searchString: string): Promise<void> {
     const structs: Struct[] = await this.structService.findStructs(searchString);
     console.log(JSON.stringify(structs, replacer));

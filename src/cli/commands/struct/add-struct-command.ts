@@ -6,6 +6,13 @@ import { StructCommand } from './struct-command';
 import { StructCommandModule } from './struct-command.module';
 
 export function addStructCommand(commandName: string, program: RootCommand): void {
+  const list = new Command('list')
+    .description('list all structs with their IDs and param counts')
+    .action(async (_options: any) => {
+      const command: StructCommand = await getCommandInstance(StructCommand, StructCommandModule);
+      await command.handleList();
+    });
+
   const get = new Command('get')
     .argument('<id>', 'struct id', ArgumentValidator.isNumber)
     .action(async (id: number, _options: any) => {
@@ -31,6 +38,7 @@ export function addStructCommand(commandName: string, program: RootCommand): voi
   program
     .command(commandName)
     .description('data operations related to structs')
+    .addCommand(list)
     .addCommand(get)
     .addCommand(find)
     .addCommand(findByParam);
