@@ -6,7 +6,9 @@ import { PARAM_ID } from '../../../core/data/param-ids';
 import { replacer } from '../../../core/json-replacer';
 import { EnumService } from '../../../core/services/enum/enum.service';
 import { StructService } from '../../../core/services/struct/struct.service';
+import { ScriptAnalysisService } from '../../../core/services/script/script-analysis.service';
 import { ITask, ITaskSkill } from '../../../core/types/task-mockup.interface';
+import { ITaskType } from '../../../core/types/task-type-mockup.interface';
 import { IInteractiveTaskExtractResult } from './interactive-task-extract-result.interface';
 import { InteractiveTaskService } from './interactive-task.service';
 
@@ -16,6 +18,7 @@ export class TasksCommand {
     private structService: StructService,
     private enumService: EnumService,
     private interactivetaskService: InteractiveTaskService,
+    private scriptAnalysisService: ScriptAnalysisService,
   ) {}
 
   public async handleTaskExtract(options: any): Promise<IInteractiveTaskExtractResult> {
@@ -132,6 +135,55 @@ export class TasksCommand {
       console.log(JSON.stringify(allTasksFormatted, replacer));
     }
     return allTasksFormatted;
+  }
+
+  public async handleUpdateCombatVarps(options: any): Promise<ITaskType> {
+    console.log('🔧 Updating combat achievement task varps...');
+    
+    // Hardcoded combat achievement values
+    const taskCompletedScriptId = 4834;
+    const taskTypesUrl = 'https://raw.githubusercontent.com/osrs-reldo/task-json-store/refs/heads/main/task-types.json';
+    
+    console.log(`📊 Analyzing script ${taskCompletedScriptId} to extract task varps...`);
+    
+    // Use ScriptAnalysisService to automatically extract varps
+    const taskVarps = await this.scriptAnalysisService.generateTaskVarps(taskCompletedScriptId);
+    console.log(`✅ Extracted ${taskVarps.length} task varps: ${taskVarps.slice(0, 5).join(', ')}${taskVarps.length > 5 ? '...' : ''}`);
+    
+    // Load task-type definitions from GitHub
+    console.log(`📡 Fetching task-types from ${taskTypesUrl}...`);
+    const response = await axios.get(taskTypesUrl);
+    const taskTypes: ITaskType[] = response.data;
+    
+    // Find combat achievement task-type (look for taskJsonName "COMBAT" or similar)
+    const taskTypeDefinition = taskTypes.find(tt => 
+      tt.taskJsonName === 'COMBAT' || 
+      tt.taskJsonName === 'combat' ||
+      tt.name?.toLowerCase().includes('combat')
+    );
+    
+    if (!taskTypeDefinition) {
+      throw new Error('Could not find combat achievement task-type in the fetched data');
+    }
+    
+    console.log(`📄 Found combat task-type: "${taskTypeDefinition.name}" (${taskTypeDefinition.taskJsonName})`);
+    
+    // Update the taskVarps with freshly extracted ones
+    const oldVarpsCount = taskTypeDefinition.taskVarps.length;
+    taskTypeDefinition.taskVarps = taskVarps;
+    taskTypeDefinition.taskCompletedScriptId = taskCompletedScriptId;
+    
+    console.log(`🔄 Updated taskVarps: ${oldVarpsCount} → ${taskVarps.length} varps`);
+    
+    if (options.json) {
+      this.writeToFile(taskTypeDefinition, 'combat-tasktype.json');
+      console.log(`💾 Updated task-type written to ./out/combat-tasktype.json`);
+    } else {
+      console.log(JSON.stringify(taskTypeDefinition, replacer, 2));
+    }
+
+    console.log('✨ Combat achievement varp update complete!');
+    return taskTypeDefinition;
   }
 
   public async handleLeagues4(options: any): Promise<ITask[]> {

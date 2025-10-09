@@ -14,6 +14,15 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
       const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
       await command.handleCombatTasks(options);
     });
+
+  const updateCombatVarps = new Command('update-combat-varps')
+    .description('Update existing combat task-type with fresh varp extraction from script analysis')
+    .option('--json', 'output to json file', false)
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleUpdateCombatVarps(options);
+    });
+
   const combatCompare = new Command('combat-compare').action(async (options: any) => {
     const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
     await command.handleCompareCombat();
@@ -54,6 +63,7 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
     .command(commandName)
     .description('data operations related to tasks')
     .addCommand(combatTasks)
+    .addCommand(updateCombatVarps)
     .addCommand(combatCompare)
     .addCommand(leagues4)
     .addCommand(extract)
