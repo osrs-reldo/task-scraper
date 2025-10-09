@@ -16,6 +16,17 @@ export interface ScriptMetadata {
   argumentCountObject: number;
   codeLength: number;
   rawData: Uint8Array;
+  switchData?: SwitchData[];
+}
+
+export interface SwitchData {
+  switchIndex: number;
+  cases: SwitchCase[];
+}
+
+export interface SwitchCase {
+  value: number;
+  offset: number;
 }
 
 export interface ParsedScript {
@@ -26,6 +37,8 @@ export interface ParsedScript {
 @Injectable()
 export class ScriptService {
   private static readonly CLIENTSCRIPTS_ARCHIVE_ID = 12;
+  // This should be determined from cache version, but we'll use a reasonable default
+  private static readonly CACHE_VERSION = 233; // Current live version as of latest update
 
   constructor(@Inject('CacheProvider') private readonly cacheProvider: CacheProvider) {}
 
@@ -61,20 +74,21 @@ export class ScriptService {
   }
 
   /**
-   * Parse script metadata from raw data
+   * Parse script metadata from raw data (updated to match Java CompiledScript.decode)
    */
   public parseScriptMetadata(scriptId: number, data: Uint8Array): ScriptMetadata {
     const reader = new Reader(data);
     
-    // Based on zwyz CompiledScript.decode implementation
-    // First, determine header size (varies based on version >= 140)
-    let headerSize = 12; // Base header: 4 bytes code length + 2*4 bytes counts
+    // Calculate header size based on cache version
+    let headerSize = 12; // Base header: 4 bytes code length + 4*2 bytes counts
+    let switchData: SwitchData[] | undefined;
     
     // For version >= 140, there's additional switch data at the end
-    // We need to read backwards from the end to find the actual header size
-    reader.offset = data.length - 2;
-    const switchDataSize = reader.u16();
-    headerSize += 2 + switchDataSize; // 2 bytes for the size + the actual switch data
+    if (ScriptService.CACHE_VERSION >= 140) {
+      reader.offset = data.length - 2;
+      const switchDataSize = reader.u16();
+      headerSize += 2 + switchDataSize; // 2 bytes for the size + the actual switch data
+    }
     
     const headerPos = data.length - headerSize;
     
@@ -85,13 +99,32 @@ export class ScriptService {
     // Read the header from the calculated position
     reader.offset = headerPos;
     
-    const codeLength = reader.i32();
+    const codeLength = reader.i32(); // This is actually the instruction count, not byte length
     const localCountInt = reader.u16();
     const localCountObject = reader.u16();
     const argumentCountInt = reader.u16();
     const argumentCountObject = reader.u16();
 
-    // Validate the parsed values make sense
+    // Read switch data if present (version >= 140)
+    if (ScriptService.CACHE_VERSION >= 140) {
+      const switchCount = reader.u8();
+      switchData = [];
+      
+      for (let i = 0; i < switchCount; i++) {
+        const caseCount = reader.u16();
+        const cases: SwitchCase[] = [];
+        
+        for (let j = 0; j < caseCount; j++) {
+          const value = reader.i32();
+          const offset = reader.i32();
+          cases.push({ value, offset });
+        }
+        
+        switchData.push({ switchIndex: i, cases });
+      }
+    }
+
+    // Validate the parsed values
     if (codeLength < 0 || codeLength > 100000) {
       throw new Error(`Invalid code length for script ${scriptId}: ${codeLength}`);
     }
@@ -104,24 +137,33 @@ export class ScriptService {
       throw new Error(`Invalid argument counts for script ${scriptId}: int=${argumentCountInt}, object=${argumentCountObject}`);
     }
 
-    // Read script name from the beginning (if present)
+    // Read script name from the beginning (using gjstrnull equivalent)
     reader.offset = 0;
     let name: string | undefined;
     try {
-      // The Java code uses gjstrnull() which reads a null-terminated string or returns null
-      const nameBytes: number[] = [];
-      while (reader.offset < headerPos) {
-        const byte = reader.u8();
-        if (byte === 0) break;
-        nameBytes.push(byte);
-      }
-      
-      if (nameBytes.length > 0) {
-        // Convert bytes to string (assuming UTF-8/ASCII)
-        name = String.fromCharCode(...nameBytes);
-        // If the name seems invalid, treat as no name
-        if (name.length > 100 || name.includes('\uFFFD')) {
-          name = undefined;
+      // Read first byte to check if name exists
+      const firstByte = reader.u8();
+      if (firstByte === 0) {
+        // No name present
+        name = undefined;
+        reader.offset = 1; // Move past the null byte
+      } else {
+        // Name present, reset and read it
+        reader.offset = 0;
+        const nameBytes: number[] = [];
+        let byte: number;
+        
+        while (reader.offset < headerPos && (byte = reader.u8()) !== 0) {
+          nameBytes.push(byte);
+        }
+        
+        if (nameBytes.length > 0 && nameBytes.length <= 100) {
+          // Convert bytes to string (assuming CP1252/ASCII)
+          name = String.fromCharCode(...nameBytes);
+          // Validate the name
+          if (name.includes('\uFFFD') || !/^[a-zA-Z0-9_\-\/]+$/.test(name)) {
+            name = undefined;
+          }
         }
       }
     } catch (error) {
@@ -138,6 +180,7 @@ export class ScriptService {
       argumentCountObject,
       codeLength,
       rawData: data,
+      switchData,
     };
   }
 
@@ -186,51 +229,22 @@ export class ScriptService {
   }
 
   /**
-   * Parse instructions from script data (Phase 2 - proper decompilation)
+   * Parse instructions from script data (updated to match Java implementation)
    */
   public parseInstructions(metadata: ScriptMetadata): ScriptInstruction[] {
     const reader = new Reader(metadata.rawData);
     const instructions: ScriptInstruction[] = [];
 
-    // Skip script name using same logic as parseScriptMetadata
+    // Skip script name using gjstrnull equivalent
     reader.offset = 0;
+    const scriptName = this.readNullTerminatedString(reader, metadata);
     
-    // Try to read name same way as metadata parsing - gjstrnull equivalent
-    try {
-      const firstByte = reader.u8();
-      if (firstByte === 0) {
-        // No name, start parsing from position 1
-        reader.offset = 1;
-      } else {
-        // Has name, read until null terminator
-        reader.offset = 0; // Reset to read the whole name
-        const nameBytes: number[] = [];
-        const headerSize = this.calculateHeaderSize(metadata.rawData);
-        const headerPos = metadata.rawData.length - headerSize;
-        
-        while (reader.offset < headerPos) {
-          const byte = reader.u8();
-          if (byte === 0) break;
-          nameBytes.push(byte);
-        }
-        
-        // If we didn't find null terminator, something's wrong
-        if (reader.offset >= headerPos) {
-          console.warn(`No null terminator found for script name in script ${metadata.id}, assuming no name`);
-          reader.offset = 0;
-        }
-      }
-    } catch (error) {
-      console.warn(`Error reading script name for script ${metadata.id}:`, error.message);
-      reader.offset = 0;
-    }
-
-    const codeStartPos = reader.offset;
+    // Calculate code end position
     const headerSize = this.calculateHeaderSize(metadata.rawData);
     const headerPos = metadata.rawData.length - headerSize;
     
     let instructionIndex = 0;
-    while (reader.offset < headerPos) {
+    while (reader.offset < headerPos && instructionIndex < metadata.codeLength) {
       try {
         const currentOffset = reader.offset;
         
@@ -254,14 +268,14 @@ export class ScriptService {
           address: instructionIndex,
         };
 
-        // Parse operand based on opcode
-        instruction.operand = this.parseOperand(reader, opcode, headerPos);
+        // Parse operand based on opcode using updated logic
+        instruction.operand = this.parseOperand(reader, opcode, instructionIndex, metadata.switchData, headerPos);
 
         instructions.push(instruction);
         instructionIndex++;
         
         // Safety check to prevent infinite loops
-        if (instructionIndex > 10000) {
+        if (instructionIndex > 100000) {
           console.warn(`Too many instructions parsed for script ${metadata.id}, stopping at ${instructionIndex}`);
           break;
         }
@@ -271,15 +285,38 @@ export class ScriptService {
       }
     }
 
-    console.log(`Script ${metadata.id}: parsed ${instructions.length} instructions from ${codeStartPos} to ${headerPos} (${headerPos - codeStartPos} bytes)`);
+    console.log(`Script ${metadata.id}: parsed ${instructions.length} instructions (expected ${metadata.codeLength})`);
     return instructions;
   }
 
   /**
-   * Parse operand for a specific command (based on Java CompiledScript.decodeOperand)
+   * Read null-terminated string (gjstrnull equivalent)
    */
-  private parseOperand(reader: Reader, opcode: number, codeEndPos: number): any {
-    if (reader.offset >= codeEndPos) {
+  private readNullTerminatedString(reader: Reader, metadata: ScriptMetadata): string | null {
+    const headerSize = this.calculateHeaderSize(metadata.rawData);
+    const headerPos = metadata.rawData.length - headerSize;
+    
+    if (metadata.rawData[reader.offset] === 0) {
+      reader.offset++; // Skip null byte
+      return null;
+    }
+    
+    const nameBytes: number[] = [];
+    while (reader.offset < headerPos) {
+      const byte = reader.u8();
+      if (byte === 0) break;
+      nameBytes.push(byte);
+    }
+    
+    if (nameBytes.length === 0) return null;
+    return String.fromCharCode(...nameBytes);
+  }
+
+  /**
+   * Parse operand for a specific command (updated to match Java CompiledScript.decodeOperand)
+   */
+  private parseOperand(reader: Reader, opcode: number, instructionIndex: number, switchData?: SwitchData[], codeEndPos?: number): any {
+    if (codeEndPos && reader.offset >= codeEndPos) {
       return undefined;
     }
 
@@ -302,7 +339,7 @@ export class ScriptService {
       } else if (opcode === 3) { // PUSH_CONSTANT_STRING
         return reader.string(); // gjstr()
       } else if (opcode === 6 || opcode === 7 || opcode === 8 || opcode === 9 || opcode === 10 || opcode === 31 || opcode === 32) { // BRANCH commands
-        return reader.i32(); // g4s() for branch target (will be adjusted by index in Java)
+        return instructionIndex + reader.i32(); // g4s() for branch target (adjusted by current index)
       } else if (opcode === 33 || opcode === 34 || opcode === 35 || opcode === 36) { // Local variable commands
         return { domain: opcode === 33 || opcode === 34 ? 'integer' : 'string', local: reader.i32() }; // g4s() -> LocalReference
       } else if (opcode === 37) { // JOIN_STRING
@@ -312,8 +349,18 @@ export class ScriptService {
       } else if (opcode === 44 || opcode === 45 || opcode === 46) { // DEFINE_ARRAY || PUSH_ARRAY_INT || POP_ARRAY_INT
         return reader.i32(); // g4s() - array
       } else if (opcode === 60) { // SWITCH
-        // This is more complex - read index then use switch data
-        return reader.i32(); // g4s() - switch index (will need switch data from header)
+        const switchIndex = reader.i32(); // g4s() - switch index
+        
+        // Find the corresponding switch data
+        if (switchData && switchData[switchIndex]) {
+          const cases = switchData[switchIndex].cases.map(switchCase => ({
+            value: switchCase.value,
+            target: instructionIndex + switchCase.offset
+          }));
+          return cases; // Return array of value-target pairs
+        }
+        
+        return switchIndex; // Fallback if no switch data available
       } else {
         // Default case uses g1() (8-bit unsigned)
         return reader.u8();
@@ -325,13 +372,19 @@ export class ScriptService {
   }
 
   /**
-   * Calculate header size including switch data
+   * Calculate header size including switch data (updated to match Java logic)
    */
   private calculateHeaderSize(data: Uint8Array): number {
-    const reader = new Reader(data);
-    reader.offset = data.length - 2;
-    const switchDataSize = reader.u16();
-    return 12 + 2 + switchDataSize; // Base header + size field + switch data
+    let headerSize = 12; // Base header: 4 bytes instruction count + 4*2 bytes counts
+    
+    if (ScriptService.CACHE_VERSION >= 140) {
+      const reader = new Reader(data);
+      reader.offset = data.length - 2;
+      const switchDataSize = reader.u16();
+      headerSize += 2 + switchDataSize; // Size field + switch data
+    }
+    
+    return headerSize;
   }
 
   /**
