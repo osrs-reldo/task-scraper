@@ -15,12 +15,15 @@ export class StructService {
     all.sort((a, b) => a.id - b.id);
     const found: Struct[] = all.filter((struct) => {
       const value: any = struct.params.get(paramKey);
-      if (!value) {
+      if (value === undefined || value === null) {
         return false;
       }
-      if (!paramValue || value === paramValue) {
+      if (paramValue === undefined || paramValue === null) {
         return true;
       }
+      const valueStr = value.toString().toLowerCase();
+      const paramStr = paramValue.toString().toLowerCase();
+      return valueStr.includes(paramStr);
     });
     return found;
   }
