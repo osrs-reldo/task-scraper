@@ -34,7 +34,7 @@ export class CacheService {
   private async downloadFile(fileUrl: string, filePath: string): Promise<void> {
     try {
       const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-      fs.writeFileSync(filePath, Buffer.from(response.data));
+      fs.writeFileSync(filePath, new Uint8Array(response.data));
       console.log(`Downloaded file: ${filePath}`);
     } catch (error) {
       console.error(`Error downloading file from ${fileUrl}`, error);
@@ -75,6 +75,7 @@ export class CacheService {
       console.log('Repository download complete.');
     } catch (error) {
       console.error('Failed to download the repository:', error);
+      throw error;
     }
   }
 

@@ -60,6 +60,7 @@ addWikiCommand('wiki', program);
     await program.parseAsync(process.argv);
   } catch (e) {
     console.error(e);
+    process.exit(1);
   }
 })();
 
