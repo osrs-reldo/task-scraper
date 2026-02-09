@@ -34,7 +34,7 @@ export class WikiService {
         throw new Error('task not found by varbit index ' + taskWikiData.varbitIndex);
       }
       if (taskWikiData.skills) {
-        task.skills = taskWikiData.skills;
+        task.skills = this.mergeSkills(task.skills ?? [], taskWikiData.skills);
       }
       if (taskWikiData.notes) {
         task.wikiNotes = taskWikiData.notes;
@@ -45,6 +45,22 @@ export class WikiService {
     }
 
     return tasks;
+  }
+  
+  // Merge wiki skills with existing skills, keeping the highest level per skill.
+  private mergeSkills(existing: ITaskSkill[], incoming: ITaskSkill[]): ITaskSkill[] {
+    const merged = new Map<string, number>();
+    for (const entry of existing) {
+      if (!entry?.skill) continue;
+      merged.set(entry.skill, Math.max(merged.get(entry.skill) ?? 0, entry.level));
+    }
+    for (const entry of incoming) {
+      if (!entry?.skill) continue;
+      merged.set(entry.skill, Math.max(merged.get(entry.skill) ?? 0, entry.level));
+    }
+    return Array.from(merged.entries())
+      .map(([skill, level]) => ({ skill, level }))
+      .sort((a, b) => a.skill.localeCompare(b.skill));
   }
 
   public async extractWikiData(
