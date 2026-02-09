@@ -65,7 +65,7 @@ export class WikiCommand {
       tasks = JSON.parse(taskJsonContent);
     } catch (error) {
       console.error(`Error reading task file ${taskJsonPath}:`, error);
-      return;
+      throw error;
     }
 
     // Get varbit index param ID
@@ -113,7 +113,7 @@ export class WikiCommand {
       tasks = JSON.parse(taskJsonContent);
     } catch (error) {
       console.error(`Error reading task file ${taskJsonPath}:`, error);
-      return;
+      throw error;
     }
 
     console.log('Appending wiki data to combat tasks...');
