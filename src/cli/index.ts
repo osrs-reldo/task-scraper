@@ -1,10 +1,12 @@
 import { CacheService } from '../core/services/cache/cache.service';
 import { addCacheCommand } from './commands/cache/add-cache-command';
 import { CacheCommand } from './commands/cache/cache-command';
+import { addDBRowCommand } from './commands/dbrow/add-dbrow-command';
 import { addEnumCommand } from './commands/enum/add-enum-command';
 import { addStructCommand } from './commands/struct/add-struct-command';
 import { addTasksCommand } from './commands/tasks/add-tasks-command';
 import { addWikiCommand } from './commands/wiki/add-wiki-command';
+import { addQuestCommand } from './commands/quests/add-quest-command';
 import { CustomNestFactory } from './custom-nest-factory';
 import { RootCommand } from './root-command';
 
@@ -52,8 +54,10 @@ const program = new RootCommand()
 addStructCommand('struct', program);
 addTasksCommand('tasks', program);
 addEnumCommand('enum', program);
+addDBRowCommand('dbrow', program);
 addCacheCommand('cache', program);
 addWikiCommand('wiki', program);
+addQuestCommand('quests', program);
 
 (async () => {
   try {
