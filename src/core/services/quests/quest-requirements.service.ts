@@ -31,21 +31,6 @@ export interface QuestRequirementDetails {
     combatLevel: number | null;
     stats: Array<{ skill: string; level: number }>;
   };
-  sources: {
-    columns: {
-      displayName: number;
-      members: number;
-      requirementStats: number;
-      recommendedStats: number;
-      requirementQuests: number;
-      requirementQuestPoints: number;
-      requirementCombat: number;
-      recommendedCombat: number;
-      checkSkillsOnStart: number;
-      requirementsBoostable: number;
-    };
-    extraRequirementScripts: number[];
-  };
 }
 
 /**
@@ -188,21 +173,6 @@ export class QuestRequirementsService {
       recommended: {
         combatLevel: this.getColumnNumber(dbrow, 28),
         stats: convertStatTuplesToSkills(recommendedStats),
-      },
-      sources: {
-        columns: {
-          displayName: 2,
-          members: 5,
-          requirementStats: 23,
-          recommendedStats: 24,
-          requirementQuests: 25,
-          requirementQuestPoints: 26,
-          requirementCombat: 27,
-          recommendedCombat: 28,
-          checkSkillsOnStart: 29,
-          requirementsBoostable: 30,
-        },
-        extraRequirementScripts: [6837, 6838, 4875],
       },
     };
   }
