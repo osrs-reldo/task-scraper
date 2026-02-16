@@ -5,13 +5,6 @@ import { QuestCommand } from './quest-command';
 import { QuestCommandModule } from './quest-command.module';
 
 export function addQuestCommand(commandName: string, program: RootCommand): void {
-  const scrape = new Command('scrape')
-    .description('scrape quest requirements from the OSRS wiki')
-    .action(async () => {
-      const command: QuestCommand = await getCommandInstance(QuestCommand, QuestCommandModule);
-      await command.handleQuestScrape();
-    });
-
   const list = new Command('list')
     .description('list quests with ids')
     .action(async () => {
@@ -27,10 +20,26 @@ export function addQuestCommand(commandName: string, program: RootCommand): void
       await command.handleQuestRollup(Number(questId));
     });
 
+  const requirements = new Command('requirements')
+    .description('dump quest requirements from cache dbrow')
+    .argument('<questId>', 'quest id to dump requirements for')
+    .action(async (questId: string) => {
+      const command: QuestCommand = await getCommandInstance(QuestCommand, QuestCommandModule);
+      await command.handleQuestRequirementsDump(Number(questId));
+    });
+
+  const requirementsAll = new Command('requirements-all')
+    .description('dump all quest requirements to quests-dbrow.json')
+    .action(async () => {
+      const command: QuestCommand = await getCommandInstance(QuestCommand, QuestCommandModule);
+      await command.handleQuestRequirementsDumpAll();
+    });
+
   program
     .command(commandName)
     .description('data operations related to quests')
-    .addCommand(scrape)
     .addCommand(list)
-    .addCommand(skills);
+    .addCommand(skills)
+    .addCommand(requirements)
+    .addCommand(requirementsAll);
 }

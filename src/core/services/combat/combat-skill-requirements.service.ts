@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import * as path from 'path';
-import { QuestScraperService } from '../quests/quest-scraper.service';
+import { QuestRequirementsService } from '../quests/quest-requirements.service';
 import { ITask, ITaskSkill } from '../../types/task-mockup.interface';
 
 @Injectable()
 export class CombatSkillRequirementsService {
-  constructor(private questScraper: QuestScraperService) {}
+  constructor(private questRequirements: QuestRequirementsService) {}
 
   private resolveTaskJsonStorePath(...segments: string[]): string {
     return path.resolve(process.cwd(), '../task-json-store', ...segments);
@@ -51,7 +51,7 @@ export class CombatSkillRequirementsService {
         if (Number.isNaN(numericQuestId)) {
           continue;
         }
-        const rollup = await this.questScraper.getQuestRequirementRollup(numericQuestId);
+        const rollup = await this.questRequirements.getQuestRequirementRollup(numericQuestId);
         mergeSkills(aggregated, rollup.skills ?? {});
       }
 

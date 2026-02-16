@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { QuestScraperModule } from '../../../core/services/quests/quest-scraper.module';
+import { QuestRequirementsModule } from '../../../core/services/quests/quest-requirements.module';
 import { QuestCommand } from './quest-command';
 
 @Module({
-  imports: [QuestScraperModule],
+  imports: [QuestRequirementsModule],
   providers: [QuestCommand],
   exports: [QuestCommand],
 })

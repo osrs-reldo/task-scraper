@@ -4,6 +4,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'path';
 import * as os from 'node:os';
 import { EnumService } from '../core/services/enum/enum.service';
+import { QuestRequirementsService } from '../core/services/quests/quest-requirements.service';
 import { StructService } from '../core/services/struct/struct.service';
 
 interface CustomColumnDefinition {
@@ -43,6 +44,7 @@ export class EditorService {
   constructor(
     private readonly structService: StructService,
     private readonly enumService: EnumService,
+    private readonly questRequirements: QuestRequirementsService,
   ) {}
 
   private async resolveTaskJsonStorePath(): Promise<string> {
@@ -233,79 +235,14 @@ export class EditorService {
     return extract ? String(extract).trim() : null;
   }
 
-  private async getQuestsPath(): Promise<string> {
-    const storePath = await this.resolveTaskJsonStorePath();
-    return path.join(storePath, 'quests.json');
-  }
-
   public async getQuests(): Promise<{ quests: any[] }> {
-    const filePath = await this.getQuestsPath();
-    try {
-      const data = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        return { quests: parsed };
-      }
-      return { quests: parsed.quests || [] };
-    } catch {
-      return { quests: [] };
-    }
+    return this.questRequirements.getQuests();
   }
 
   public async getQuestRequirementRollup(
     questId: number,
   ): Promise<{ skills: Record<string, number>; quests: number[] }> {
-    const { quests } = await this.getQuests();
-    const questMap = new Map<number, any>();
-    quests.forEach((quest) => {
-      const id = Number(quest?.id);
-      if (!Number.isNaN(id)) {
-        questMap.set(id, quest);
-      }
-    });
-
-    const visited = new Set<number>();
-    const collectedQuests = new Set<number>();
-    const skills: Record<string, number> = {};
-
-    const mergeSkills = (source: Record<string, number> = {}) => {
-      Object.entries(source).forEach(([skill, level]) => {
-        const numericLevel = Number(level);
-        if (Number.isNaN(numericLevel)) {
-          return;
-        }
-        skills[skill] = Math.max(skills[skill] || 0, numericLevel);
-      });
-    };
-
-    const walk = (currentId: number) => {
-      if (visited.has(currentId)) {
-        return;
-      }
-      visited.add(currentId);
-      const quest = questMap.get(currentId);
-      if (!quest) {
-        return;
-      }
-      const reqs = quest.requirements || {};
-      mergeSkills(reqs.skills || {});
-      const prereqs: number[] = Array.isArray(reqs.quests) ? reqs.quests : [];
-      prereqs.forEach((childId) => {
-        const numericId = Number(childId);
-        if (Number.isNaN(numericId)) {
-          return;
-        }
-        collectedQuests.add(numericId);
-        walk(numericId);
-      });
-    };
-
-    walk(Number(questId));
-
-    return {
-      skills,
-      quests: Array.from(collectedQuests.values()).sort((a, b) => a - b),
-    };
+    return this.questRequirements.getQuestRequirementRollup(questId);
   }
 
   private getWizardStatePath(taskJsonName: string, columnKey: string): string {

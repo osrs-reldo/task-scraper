@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { QuestScraperModule } from '../quests/quest-scraper.module';
+import { QuestRequirementsModule } from '../quests/quest-requirements.module';
 import { CombatSkillRequirementsService } from './combat-skill-requirements.service';
 
 @Module({
-  imports: [QuestScraperModule],
+  imports: [QuestRequirementsModule],
   providers: [CombatSkillRequirementsService],
   exports: [CombatSkillRequirementsService],
 })
