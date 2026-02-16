@@ -9,6 +9,7 @@ import { combatCommand } from './add-combat-command';
 
 export function addTasksCommand(commandName: string, program: RootCommand): void {
   const extract = new Command('extract')
+    .description('extracts tasks using an interactive prompt, used to find data sources for tasks & task types')
     .option('--task-name <taskName>', 'override prompt for the task name')
     .option('--id-param <idParam>', 'override prompt for the id', ArgumentValidator.isNumber)
     .option('--name-param <nameParam>', 'override prompt for the name', ArgumentValidator.isNumber)
