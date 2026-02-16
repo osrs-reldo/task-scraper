@@ -1,8 +1,7 @@
 import { DBRow } from '@abextm/cache2';
 import { Injectable } from '@nestjs/common';
-import { readFileSync } from 'fs';
-import * as path from 'path';
 import { DBRowService } from '../dbrow/dbrow.service';
+import { EnumService } from '../enum/enum.service';
 
 export interface QuestRequirements {
   skills: Record<string, number>;
@@ -24,13 +23,13 @@ export interface QuestRequirementDetails {
     quests: number[];
     questPoints: number | null;
     combatLevel: number | null;
-    stats: Array<{ stat: number; level: number }>;
+    stats: Array<{ skill: string; level: number }>;
     checkSkillsOnStart: boolean | null;
     boostable: boolean | null;
   };
   recommended: {
     combatLevel: number | null;
-    stats: Array<{ stat: number; level: number }>;
+    stats: Array<{ skill: string; level: number }>;
   };
   sources: {
     columns: {
@@ -49,13 +48,42 @@ export interface QuestRequirementDetails {
   };
 }
 
+/**
+ * Extra quest requirements from scripts 6837, 6838, 4875
+ * These are requirements not captured in the standard database columns
+ * Script 6837 contains quest prerequisites based on player settings (%cluequest_req)
+ * Script 6838 contains non-quest requirements (kudos, activities)
+ * Script 4875 contains non-quest requirements (Warriors' Guild access)
+ */
+const EXTRA_QUEST_REQUIREMENTS: Record<number, number[]> = {
+  // Kourend quests that require X Marks the Spot (quest 162)
+  // These depend on %cluequest_req setting, but we include them unconditionally
+  143: [162], // Tale of the Righteous → X Marks the Spot
+  3: [162],   // The Ascent of Arceuus → X Marks the Spot
+  54: [162],  // The Forsaken Tower → X Marks the Spot
+  113: [162], // The Queen of Thieves → X Marks the Spot
+  26: [162],  // The Depths of Despair → X Marks the Spot
+  13: [162],  // Client of Kourend → X Marks the Spot
+  81: [162],  // A Kingdom Divided → X Marks the Spot
+  
+  // Recipe for Disaster subquest requirements
+  96: [2315], // Monkey Madness II → RFD - Freeing King Awowogei
+  67: [2310], // The Great Brain Robbery → RFD - Freeing Pirate Pete
+  
+  // Note: Other requirements in scripts (Museum Kudos, Warriors' Guild Access, etc.)
+  // are not quest requirements and are handled separately
+};
+
 @Injectable()
 export class QuestRequirementsService {
   private questListCache: QuestDefinition[] | null = null;
   private questMapCache: Map<number, QuestDefinition> | null = null;
-  private statNameCache: Map<number, string> | null = null;
+  private statNamesCache: Map<number, string> | null = null;
 
-  constructor(private readonly dbrowService: DBRowService) {}
+  constructor(
+    private readonly dbrowService: DBRowService,
+    private readonly enumService: EnumService,
+  ) {}
 
   public async getQuests(): Promise<{ quests: QuestDefinition[] }> {
     const quests = await this.ensureQuestList();
@@ -96,7 +124,12 @@ export class QuestRequirementsService {
       const reqs = quest.requirements || { skills: {}, quests: [] };
       mergeSkills(reqs.skills || {});
       const prereqs: number[] = Array.isArray(reqs.quests) ? reqs.quests : [];
-      prereqs.forEach((childId) => {
+      
+      // Add extra quest requirements from scripts (6837, 6838, 4875)
+      const extraPrereqs = EXTRA_QUEST_REQUIREMENTS[currentId] || [];
+      const allPrereqs = [...prereqs, ...extraPrereqs];
+      
+      allPrereqs.forEach((childId) => {
         const numericId = Number(childId);
         if (Number.isNaN(numericId)) {
           return;
@@ -127,22 +160,34 @@ export class QuestRequirementsService {
       .map((value) => this.normalizeNumber(value))
       .filter((value): value is number => value !== null);
 
+    // Add extra quest requirements from scripts
+    const extraQuests = EXTRA_QUEST_REQUIREMENTS[questId] || [];
+    const allRequirementQuests = [...requirementQuests, ...extraQuests];
+
+    const statNames = await this.getStatNames();
+    const convertStatTuplesToSkills = (tuples: Array<{ stat: number; level: number }>) => {
+      return tuples.map(({ stat, level }) => {
+        const skillName = statNames.get(stat) ?? `STAT_${stat}`;
+        return { skill: skillName, level };
+      });
+    };
+
     return {
       tableId,
       questId,
       displayName: this.getColumnString(dbrow, 2),
       members: this.getColumnBoolean(dbrow, 5),
       requirements: {
-        quests: requirementQuests,
+        quests: allRequirementQuests,
         questPoints: this.getColumnNumber(dbrow, 26),
         combatLevel: this.getColumnNumber(dbrow, 27),
-        stats: requirementStats,
+        stats: convertStatTuplesToSkills(requirementStats),
         checkSkillsOnStart: this.getColumnBoolean(dbrow, 29),
         boostable: this.getColumnBoolean(dbrow, 30),
       },
       recommended: {
         combatLevel: this.getColumnNumber(dbrow, 28),
-        stats: recommendedStats,
+        stats: convertStatTuplesToSkills(recommendedStats),
       },
       sources: {
         columns: {
@@ -167,23 +212,22 @@ export class QuestRequirementsService {
       return this.questListCache;
     }
 
-    const statNames = this.loadStatNames();
     const rows = await this.dbrowService.getDBRowsByTable(0);
-    this.questListCache = rows
-      .map((row) => {
-        const id = Number(row.id);
-        const displayName = this.getColumnString(row, 2);
-        const name = displayName && displayName.trim().length > 0
-          ? displayName
-          : `Quest ${id}`;
-        return {
-          id,
-          name,
-          requirements: this.buildQuestRequirements(row, statNames),
-        };
-      })
-      .filter((quest) => !Number.isNaN(quest.id))
-      .sort((a, b) => a.id - b.id);
+    const quests = [];
+    for (const row of rows) {
+      const id = Number(row.id);
+      if (Number.isNaN(id)) continue;
+      const displayName = this.getColumnString(row, 2);
+      const name = displayName && displayName.trim().length > 0
+        ? displayName
+        : `Quest ${id}`;
+      quests.push({
+        id,
+        name,
+        requirements: await this.buildQuestRequirements(row),
+      });
+    }
+    this.questListCache = quests.sort((a, b) => a.id - b.id);
 
     return this.questListCache;
   }
@@ -197,50 +241,46 @@ export class QuestRequirementsService {
     return this.questMapCache;
   }
 
-  private loadStatNames(): Map<number, string> {
-    if (this.statNameCache) {
-      return this.statNameCache;
+  private async getStatNames(): Promise<Map<number, string>> {
+    if (this.statNamesCache) {
+      return this.statNamesCache;
     }
+    
+    const statEnum = await this.enumService.getEnum(680);
     const map = new Map<number, string>();
-    const statPath = path.resolve(process.cwd(), '../osrs-dumps/symbols/stat.sym');
-    try {
-      const raw = readFileSync(statPath, 'utf-8');
-      raw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0)
-        .forEach((line) => {
-          const [idRaw, nameRaw] = line.split(/\s+/, 2);
-          const id = Number(idRaw);
-          if (!Number.isNaN(id) && nameRaw) {
-            map.set(id, nameRaw.toUpperCase());
-          }
-        });
-    } catch (error) {
-      console.warn('Unable to load stat symbols', { statPath, error });
+    
+    for (const [key, value] of statEnum.map.entries()) {
+      if (typeof value === 'string') {
+        map.set(Number(key), value.toUpperCase());
+      }
     }
-    this.statNameCache = map;
-    return this.statNameCache;
+    
+    this.statNamesCache = map;
+    return this.statNamesCache;
   }
 
-  private buildQuestRequirements(
+  private async buildQuestRequirements(
     dbrow: DBRow,
-    statNames: Map<number, string>,
-  ): { skills: Record<string, number>; quests: number[] } {
+  ): Promise<{ skills: Record<string, number>; quests: number[] }> {
+    const statNames = await this.getStatNames();
     const skills: Record<string, number> = {};
     this.getStatTuples(dbrow, 23).forEach(({ stat, level }) => {
       const name = statNames.get(stat) ?? `STAT_${stat}`;
-      const normalized = name.toUpperCase();
-      skills[normalized] = Math.max(skills[normalized] || 0, level);
+      skills[name] = Math.max(skills[name] || 0, level);
     });
 
     const quests = this.getColumnValues(dbrow, 25)
       .map((value) => this.normalizeNumber(value))
       .filter((value): value is number => value !== null);
 
+    // Add extra quest requirements from scripts
+    const questId = Number(dbrow.id);
+    const extraQuests = EXTRA_QUEST_REQUIREMENTS[questId] || [];
+    const allQuests = [...quests, ...extraQuests];
+
     return {
       skills,
-      quests,
+      quests: allQuests,
     };
   }
 

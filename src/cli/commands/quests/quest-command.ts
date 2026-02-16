@@ -30,7 +30,7 @@ export class QuestCommand {
     console.log(JSON.stringify(output, null, 2));
   }
 
-  public async handleQuestRequirementsDumpAll(): Promise<void> {
+  public async handleQuestRequirementsDumpAll(writeToFile?: boolean): Promise<void> {
     const outputQuests = await this.questRequirements.getQuestList();
 
     const output = {
@@ -39,8 +39,12 @@ export class QuestCommand {
       quests: outputQuests,
     };
 
-    const outputPath = path.resolve(process.cwd(), '../task-json-store/quests-dbrow.json');
-    writeFileSync(outputPath, JSON.stringify(output, null, 2));
-    console.log(`Saved ${outputQuests.length} quests to ${outputPath}`);
+    if (writeToFile) {
+      const outputPath = path.resolve(process.cwd(), './out/quests-dbrow.json');
+      writeFileSync(outputPath, JSON.stringify(output, null, 2));
+      console.log(`Saved ${outputQuests.length} quests to ${outputPath}`);
+    } else {
+      console.log(JSON.stringify(output, null, 2));
+    }
   }
 }

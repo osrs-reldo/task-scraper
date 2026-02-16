@@ -97,7 +97,13 @@ export class CombatSkillRequirementsService {
     for (const task of tasks) {
       const combinedSkills = skillsById[task.structId];
       if (combinedSkills?.length) {
+        // Reorder properties: add skills, then move completionPercent to the end
+        const completionPercent = task.completionPercent;
+        delete task.completionPercent;
         task.skills = combinedSkills;
+        if (completionPercent !== undefined) {
+          task.completionPercent = completionPercent;
+        }
       }
     }
     return skillsById;

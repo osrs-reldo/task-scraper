@@ -29,10 +29,11 @@ export function addQuestCommand(commandName: string, program: RootCommand): void
     });
 
   const requirementsAll = new Command('requirements-all')
-    .description('dump all quest requirements to quests-dbrow.json')
-    .action(async () => {
+    .description('dump all quest requirements')
+    .option('--json', 'save output to /out/quests-dbrow.json instead of console')
+    .action(async (options: { json?: boolean }) => {
       const command: QuestCommand = await getCommandInstance(QuestCommand, QuestCommandModule);
-      await command.handleQuestRequirementsDumpAll();
+      await command.handleQuestRequirementsDumpAll(options.json);
     });
 
   program
