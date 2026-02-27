@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ScriptService } from '../../../core/services/script/script.service';
 import { ScriptAnalysisService } from '../../../core/services/script/script-analysis.service';
 import { Rs2asmFormatter } from '../../../core/services/script/rs2asm-formatter';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 
 @Injectable()
 export class ScriptCommand {
@@ -217,6 +217,7 @@ export class ScriptCommand {
         return;
       }
       
+      mkdirSync('./out', { recursive: true });
       writeFileSync(fileName, rs2asm);
       console.log(`✅ Script saved to ${fileName}`);
       
