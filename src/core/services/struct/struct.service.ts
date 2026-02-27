@@ -10,6 +10,13 @@ export class StructService {
     return Struct.load(this.cacheProvider, id);
   }
 
+  public async getAllStructs(): Promise<Struct[]> {
+    console.info('getAllStructs');
+    const all: Struct[] = await Struct.all(this.cacheProvider);
+    all.sort((a, b) => a.id - b.id);
+    return all;
+  }
+
   public async findByParam(paramKey: ParamID, paramValue?: any): Promise<Struct[]> {
     const all: Struct[] = await Struct.all(this.cacheProvider);
     all.sort((a, b) => a.id - b.id);

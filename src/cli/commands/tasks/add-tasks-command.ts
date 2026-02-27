@@ -8,6 +8,15 @@ import { TasksCommandModule } from './tasks-command.module';
 import { combatCommand } from './add-combat-command';
 
 export function addTasksCommand(commandName: string, program: RootCommand): void {
+
+  const updateVarps = new Command('update-varps')
+    .description('Update task-type with fresh varp extraction from script analysis')
+    .option('--type <taskType>', 'Task type name (e.g., COMBAT, DIARY, LEAGUE)')
+    .option('--json', 'output to json file', false)
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleUpdateVarps(options);
+    });
   const extract = new Command('extract')
     .description('extracts tasks using an interactive prompt, used to find data sources for tasks & task types')
     .option('--task-name <taskName>', 'override prompt for the task name')
@@ -34,6 +43,7 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
   program
     .command(commandName)
     .description('data operations related to tasks')
+    .addCommand(updateVarps)
     .addCommand(combatCommand)
     .addCommand(extract)
     .addCommand(generateFrontendTasks);
