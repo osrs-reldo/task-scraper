@@ -128,10 +128,31 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
       }
     });
 
+  // Get script command
+  const get = new Command('get')
+    .description('Get a script and save it to a file in the out directory')
+    .argument('<scriptId>', 'Script ID to get')
+    .action(async (scriptIdStr, options) => {
+      try {
+        const scriptId = parseInt(scriptIdStr);
+        if (isNaN(scriptId)) {
+          console.error('❌ Script ID must be a number');
+          process.exit(1);
+        }
+
+        const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
+        await scriptCommand.handleGet(scriptId, options);
+      } catch (error) {
+        console.error('Error executing script get command:', error);
+        process.exit(1);
+      }
+    });
+
   scriptCmd.addCommand(list);
   scriptCmd.addCommand(show);
   scriptCmd.addCommand(search);
   scriptCmd.addCommand(ids);
   scriptCmd.addCommand(decompile);
   scriptCmd.addCommand(analyze);
+  scriptCmd.addCommand(get);
 }

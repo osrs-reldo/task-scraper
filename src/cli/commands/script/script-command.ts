@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ScriptService } from '../../../core/services/script/script.service';
 import { ScriptAnalysisService } from '../../../core/services/script/script-analysis.service';
 import { Rs2asmFormatter } from '../../../core/services/script/rs2asm-formatter';
+import { writeFileSync } from 'fs';
 
 @Injectable()
 export class ScriptCommand {
@@ -188,6 +189,39 @@ export class ScriptCommand {
       
     } catch (error) {
       console.log(`❌ Failed to analyze script ${scriptId}:`, error.message);
+    }
+  }
+
+  public async handleGet(scriptId: number, options: any): Promise<void> {
+    console.log(`📥 Getting script ${scriptId}...`);
+    
+    try {
+      const parsed = await this.scriptService.getParsedScript(scriptId);
+      if (!parsed) {
+        console.log(`❌ Script ${scriptId} not found`);
+        return;
+      }
+
+      const { metadata } = parsed;
+      const scriptName = metadata.name ? metadata.name.replace(/[^a-z0-9_-]/gi, '_') : `script_${scriptId}`;
+      const fileName = `./out/${scriptName}.rs2asm`;
+      
+      const rs2asm = await this.scriptService.getScriptAsRs2asm(scriptId, {
+        includeMetadata: true,
+        includeComments: true,
+        includeAddresses: false,
+      });
+      
+      if (!rs2asm) {
+        console.log(`❌ Failed to generate rs2asm for script ${scriptId}`);
+        return;
+      }
+      
+      writeFileSync(fileName, rs2asm);
+      console.log(`✅ Script saved to ${fileName}`);
+      
+    } catch (error) {
+      console.log(`❌ Failed to get script ${scriptId}:`, error.message);
     }
   }
 }
