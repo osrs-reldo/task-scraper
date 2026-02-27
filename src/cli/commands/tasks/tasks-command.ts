@@ -1,7 +1,7 @@
 import { ParamID, Struct } from '@abextm/cache2';
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { StructService } from '../../../core/services/struct/struct.service';
 import { ScriptAnalysisService } from '../../../core/services/script/script-analysis.service';
 import { ITask, ITaskSkill } from '../../../core/types/task-mockup.interface';
@@ -21,6 +21,7 @@ export class TasksCommand {
   public async handleTaskExtract(options: any): Promise<IInteractiveTaskExtractResult> {
     const results: IInteractiveTaskExtractResult = await this.interactivetaskService.promptTaskExtraction(options);
     if (options.json) {
+      mkdirSync('./out', { recursive: true });
       writeFileSync(`./out/${results.taskType.taskJsonName}.json`, JSON.stringify(results.tasks, null, 2));
       writeFileSync(`./out/${results.taskType.taskJsonName}-tasktype.json`, JSON.stringify(results.taskType, null, 2));
     } else {
@@ -138,6 +139,8 @@ export class TasksCommand {
     console.log(`🔄 Updated taskVarps: ${oldVarpsCount} → ${taskVarps.length} varps`);
     
     if (options.json) {
+      // Ensure out directory exists
+      mkdirSync('./out', { recursive: true });
       const filename = `./out/${taskTypeDefinition.taskJsonName.toLowerCase()}-tasktype.json`;
       writeFileSync(filename, JSON.stringify(taskTypeDefinition, null, 2));
       console.log(`💾 Updated task-type written to ${filename}`);

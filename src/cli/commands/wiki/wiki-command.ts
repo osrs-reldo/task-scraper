@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { IColumnDefinitions } from '../../../core/services/wiki/column-definitions.interface';
 import { WikiService } from '../../../core/services/wiki/wiki.service';
 import { InteractivePrompt } from '../../interactive-prompt.util';
@@ -32,6 +32,7 @@ export class WikiCommand {
     );
 
     if (options.json) {
+      mkdirSync('./out', { recursive: true });
       writeFileSync(`./out/wiki-scrape.json`, JSON.stringify(data, null));
     } else {
       console.log(JSON.stringify(data, null, 2));
