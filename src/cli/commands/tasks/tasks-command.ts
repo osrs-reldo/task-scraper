@@ -8,6 +8,7 @@ import { ITask, ITaskSkill } from '../../../core/types/task-mockup.interface';
 import { ITaskType } from '../../../core/types/task-type-mockup.interface';
 import { IInteractiveTaskExtractResult } from './interactive-task-extract-result.interface';
 import { InteractiveTaskService } from './interactive-task.service';
+import { InteractivePrompt } from '../../interactive-prompt.util';
 
 @Injectable()
 export class TasksCommand {
@@ -74,52 +75,77 @@ export class TasksCommand {
     console.log(JSON.stringify(frontendTasks, null, 2));
   }
 
-  public async handleUpdateCombatVarps(options: any): Promise<ITaskType> {
-    console.log('🔧 Updating combat achievement task varps...');
+  public async handleUpdateVarps(options: any): Promise<ITaskType> {
+    console.log('🔧 Updating task varps...');
     
-    // Hardcoded combat achievement values
-    const taskCompletedScriptId = 4834;
     const taskTypesUrl = 'https://raw.githubusercontent.com/osrs-reldo/task-json-store/refs/heads/main/task-types.json';
-    
-    console.log(`📊 Analyzing script ${taskCompletedScriptId} to extract task varps...`);
-    
-    // Use ScriptAnalysisService to automatically extract varps
-    const taskVarps = await this.scriptAnalysisService.generateTaskVarps(taskCompletedScriptId);
-    console.log(`✅ Extracted ${taskVarps.length} task varps: ${taskVarps.slice(0, 5).join(', ')}${taskVarps.length > 5 ? '...' : ''}`);
     
     // Load task-type definitions from GitHub
     console.log(`📡 Fetching task-types from ${taskTypesUrl}...`);
     const response = await axios.get(taskTypesUrl);
     const taskTypes: ITaskType[] = response.data;
     
-    // Find combat achievement task-type (look for taskJsonName "COMBAT" or similar)
-    const taskTypeDefinition = taskTypes.find(tt => 
-      tt.taskJsonName === 'COMBAT' || 
-      tt.taskJsonName === 'combat' ||
-      tt.name?.toLowerCase().includes('combat')
-    );
+    let taskTypeDefinition: ITaskType | undefined;
     
-    if (!taskTypeDefinition) {
-      throw new Error('Could not find combat achievement task-type in the fetched data');
+    // If --type provided, find it. Otherwise, show interactive selection
+    if (options.type) {
+      taskTypeDefinition = taskTypes.find(tt => 
+        tt.taskJsonName.toLowerCase() === options.type.toLowerCase() ||
+        tt.name.toLowerCase() === options.type.toLowerCase()
+      );
+      
+      if (!taskTypeDefinition) {
+        console.error(`❌ Could not find task-type matching "${options.type}"`);
+        console.log(`Available task types: ${taskTypes.map(tt => tt.taskJsonName).join(', ')}`);
+        throw new Error(`Task type "${options.type}" not found`);
+      }
+    } else {
+      // Interactive selection
+      const choices = taskTypes
+        .filter(tt => tt.taskCompletedScriptId) // Only show task types with a script ID
+        .map(tt => ({
+          name: `${tt.name} (${tt.taskJsonName}) - Script ${tt.taskCompletedScriptId}`,
+          value: tt,
+        }));
+      
+      if (choices.length === 0) {
+        throw new Error('No task types with taskCompletedScriptId found');
+      }
+      
+      taskTypeDefinition = await InteractivePrompt.select(
+        'Select a task type to update:',
+        choices
+      );
     }
     
-    console.log(`📄 Found combat task-type: "${taskTypeDefinition.name}" (${taskTypeDefinition.taskJsonName})`);
+    console.log(`📄 Selected task-type: "${taskTypeDefinition.name}" (${taskTypeDefinition.taskJsonName})`);
+    
+    if (!taskTypeDefinition.taskCompletedScriptId) {
+      throw new Error(`Task type "${taskTypeDefinition.name}" does not have a taskCompletedScriptId defined`);
+    }
+    
+    const taskCompletedScriptId = taskTypeDefinition.taskCompletedScriptId;
+    console.log(`📊 Analyzing script ${taskCompletedScriptId} to extract task varps...`);
+    
+    // Use ScriptAnalysisService to automatically extract varps
+    const taskVarps = await this.scriptAnalysisService.generateTaskVarps(taskCompletedScriptId);
+    console.log(`✅ Extracted ${taskVarps.length} task varps: ${taskVarps.slice(0, 5).join(', ')}${taskVarps.length > 5 ? '...' : ''}`);
     
     // Update the taskVarps with freshly extracted ones
     const oldVarpsCount = taskTypeDefinition.taskVarps.length;
     taskTypeDefinition.taskVarps = taskVarps;
-    taskTypeDefinition.taskCompletedScriptId = taskCompletedScriptId;
     
     console.log(`🔄 Updated taskVarps: ${oldVarpsCount} → ${taskVarps.length} varps`);
     
     if (options.json) {
-      writeFileSync(`./out/combat-tasktype.json`, JSON.stringify(taskTypeDefinition, null));
-      console.log(`💾 Updated task-type written to ./out/combat-tasktype.json`);
+      const filename = `./out/${taskTypeDefinition.taskJsonName.toLowerCase()}-tasktype.json`;
+      writeFileSync(filename, JSON.stringify(taskTypeDefinition, null, 2));
+      console.log(`💾 Updated task-type written to ${filename}`);
     } else {
       console.log(JSON.stringify(taskTypeDefinition, null, 2));
     }
 
-    console.log('✨ Combat achievement varp update complete!');
+    console.log('✨ Task varp update complete!');
     return taskTypeDefinition;
   }
 }
