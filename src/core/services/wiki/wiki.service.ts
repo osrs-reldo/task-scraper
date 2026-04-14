@@ -166,7 +166,7 @@ export class WikiService {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error scraping the wiki page:', error);
       return [];
     }

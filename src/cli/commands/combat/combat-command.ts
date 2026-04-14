@@ -84,7 +84,7 @@ export class CombatCommand {
     try {
       const taskJsonContent = readFileSync(taskJsonPath, 'utf-8');
       tasks = JSON.parse(taskJsonContent);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error reading task file ${taskJsonPath}:`, error);
       throw error;
     }
@@ -115,7 +115,7 @@ export class CombatCommand {
     try {
       const taskJsonContent = readFileSync(inputPath, 'utf-8');
       tasks = JSON.parse(taskJsonContent);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error reading task file ${inputPath}:`, error);
       throw error;
     }

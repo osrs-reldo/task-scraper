@@ -115,7 +115,7 @@ export class InteractiveTaskService {
         console.log('Falling back to manual input...');
         return await this.promptTaskVarps();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn(`Failed to analyze script ${scriptId}:`, error.message);
       console.log('Falling back to manual input...');
       return await this.promptTaskVarps();
