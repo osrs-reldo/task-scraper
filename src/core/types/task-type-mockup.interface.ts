@@ -93,6 +93,24 @@ export interface ITaskType {
    * Example: Combat achievements = script 4834
    */
   taskCompletedScriptId: number;
+
+  /**
+   * Tiers for task point based milestones
+   * Resolution priority: game varbit → hardcoded JSON value → -1 (unknown)
+   * `varbitId` is the varbit that dynamically provides the points threshold for the tier
+   * `label` is the string label for the tier to be displayed in the plugin
+   * `points` is the hardcoded number of points required to reach this tier
+   */
+  taskPointTiers: { varbitId: number; label: string; points: number; }[];
+
+  /**
+   * Tiers for task completion count based milestones
+   * Resolution priority: game varbit → hardcoded JSON value → -1 (unknown)
+   * `varbitId` is the varbit that dynamically provides the task count threshold for the unlock
+   * `label` is the string label for the unlock tier to be displayed in the plugin
+   * `tasks` is the number of tasks required to reach this unlock tier
+   */
+  taskCompletionCountTiers: { varbitId: number; label: string; tasks: number; }[];
 }
 
 /**

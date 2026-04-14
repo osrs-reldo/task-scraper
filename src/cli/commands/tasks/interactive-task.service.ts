@@ -11,7 +11,9 @@ import { ITaskType } from '../../../core/types/task-type-mockup.interface';
 import { InteractivePrompt } from '../../interactive-prompt.util';
 import { ISelectOption } from '../../select-option.interface';
 import { LEAGUE_5_COLUMNS } from './column-definitions/league-5-columns';
+import { LEAGUE_6_COLUMNS } from './column-definitions/league-6-columns';
 import { IInteractiveTaskExtractResult } from './interactive-task-extract-result.interface';
+import { IColumnDefinitions } from 'src/core/services/wiki/column-definitions.interface';
 
 @Injectable()
 export class InteractiveTaskService {
@@ -56,12 +58,26 @@ export class InteractiveTaskService {
       'enter the task id attribute (from the tr elements)',
       'data-taskid',
     );
+    const columnDefs = [LEAGUE_5_COLUMNS, LEAGUE_6_COLUMNS];
+    let columnDefinitions: IColumnDefinitions;
+    if (columnDefs.some((defs) => defs.nameColumnId === 1 && defs.descriptionColumnId === 2)) {
+      const columnDefOptions: ISelectOption<IColumnDefinitions>[] = columnDefs.map((defs, index) => ({
+        name: `League ${index + 5}`,
+        value: defs,
+      }));
+      columnDefinitions = await InteractivePrompt.select(
+        'select the column definitions to use for wiki data extraction',
+        columnDefOptions,
+        LEAGUE_5_COLUMNS
+      );
+    }
+    
     const allTasksWithWikiData = await this.wikiService.extractAndAppendData(
       allTasksFormatted,
       wikiUrl,
       taskIdAttribute,
       paramMap.get('id'),
-      LEAGUE_5_COLUMNS,
+      columnDefinitions,
     );
     console.log('wiki data appended');
 
@@ -89,6 +105,8 @@ export class InteractiveTaskService {
       stringEnumMap: await this.promptStringEnumMap(),
       tierSpriteIdMap: await this.promptTierSpriteIdMap(),
       taskCompletedScriptId,
+      taskPointTiers: [],
+      taskCompletionCountTiers: []
     };
 
     console.log('interactive task extraction complete!');
