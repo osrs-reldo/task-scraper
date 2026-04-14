@@ -29,6 +29,7 @@ export class DBRowService {
       return [];
     }
     rows.sort((a, b) => a.id - b.id);
+    const lowerSearch = searchString.toLowerCase();
     const found: DBRow[] = rows.filter((dbrow) => {
       if (!dbrow.values || !Array.isArray(dbrow.values)) {
         return false;
@@ -41,7 +42,7 @@ export class DBRowService {
           if (typeof v !== 'string') {
             continue;
           }
-          if (v.includes(searchString)) {
+          if (v.toLowerCase().includes(lowerSearch)) {
             return true;
           }
         }
@@ -49,6 +50,23 @@ export class DBRowService {
       return false;
     });
     return found;
+  }
+
+  public async searchAllTables(searchString: string): Promise<Array<{ tableId: number; rows: DBRow[] }>> {
+    const tables = await DBTable.all(this.cacheProvider);
+    const results: Array<{ tableId: number; rows: DBRow[] }> = [];
+    for (const table of tables) {
+      let rows: DBRow[];
+      try {
+        rows = await this.findDBRows(table.id, searchString);
+      } catch (_e) {
+        continue;
+      }
+      if (rows.length > 0) {
+        results.push({ tableId: table.id, rows });
+      }
+    }
+    return results;
   }
 
   public getStringValues(dbrow: DBRow): Array<{ column: number; index: number; value: string }> {
