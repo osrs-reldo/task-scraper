@@ -40,11 +40,21 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
       const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
       await command.handleGenerateFrontendTasks(jsonFilename, nameParamId, descriptionParamId);
     });
+  const extractDbRow = new Command('extract-dbrow')
+    .description('extracts tasks from dbrows using an interactive prompt, sourced from a given enum')
+    .option('--enum-id <enumId>', 'the enum id containing dbrow ids')
+    .option('--json', 'output to json file')
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleDbRowTaskExtract(options);
+    });
+
   program
     .command(commandName)
     .description('data operations related to tasks')
     .addCommand(updateVarps)
     .addCommand(combatCommand)
     .addCommand(extract)
+    .addCommand(extractDbRow)
     .addCommand(generateFrontendTasks);
 }

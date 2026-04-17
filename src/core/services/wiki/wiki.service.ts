@@ -63,6 +63,39 @@ export class WikiService {
       .sort((a, b) => a.skill.localeCompare(b.skill));
   }
 
+  public async extractAndAppendDataBySortId(
+    tasks: ITask[],
+    wikiUrl: string,
+    taskIdAttribute: string,
+    columnDefinitions: IColumnDefinitions,
+  ): Promise<ITask[]> {
+    const tasksBySortId: Map<number, ITask> = new Map();
+    for (const task of tasks) {
+      tasksBySortId.set(task.sortId, task);
+    }
+
+    const extractedWikiData = await this.extractWikiData(wikiUrl, taskIdAttribute, columnDefinitions);
+
+    for (const taskWikiData of extractedWikiData) {
+      const task: ITask = tasksBySortId.get(taskWikiData.varbitIndex);
+      if (!task) {
+        console.warn('task not found by sort id (enum index) ' + taskWikiData.varbitIndex + ', skipping');
+        continue;
+      }
+      if (taskWikiData.skills) {
+        task.skills = this.mergeSkills(task.skills ?? [], taskWikiData.skills);
+      }
+      if (taskWikiData.notes) {
+        task.wikiNotes = taskWikiData.notes;
+      }
+      if (taskWikiData.completionPercent) {
+        task.completionPercent = taskWikiData.completionPercent;
+      }
+    }
+
+    return tasks;
+  }
+
   public async extractWikiData(
     wikiUrl: string,
     taskIdAttribute: string,

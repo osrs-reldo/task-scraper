@@ -7,6 +7,7 @@ import { ScriptAnalysisService } from '../../../core/services/script/script-anal
 import { ITask, ITaskSkill } from '../../../core/types/task-mockup.interface';
 import { ITaskType } from '../../../core/types/task-type-mockup.interface';
 import { IInteractiveTaskExtractResult } from './interactive-task-extract-result.interface';
+import { InteractiveDbRowTaskService } from './interactive-dbrow-task.service';
 import { InteractiveTaskService } from './interactive-task.service';
 import { InteractivePrompt } from '../../interactive-prompt.util';
 
@@ -15,11 +16,24 @@ export class TasksCommand {
   constructor(
     private structService: StructService,
     private interactivetaskService: InteractiveTaskService,
+    private interactiveDbRowTaskService: InteractiveDbRowTaskService,
     private scriptAnalysisService: ScriptAnalysisService,
   ) {}
 
   public async handleTaskExtract(options: any): Promise<IInteractiveTaskExtractResult> {
     const results: IInteractiveTaskExtractResult = await this.interactivetaskService.promptTaskExtraction(options);
+    if (options.json) {
+      mkdirSync('./out', { recursive: true });
+      writeFileSync(`./out/${results.taskType.taskJsonName}.json`, JSON.stringify(results.tasks, null, 2));
+      writeFileSync(`./out/${results.taskType.taskJsonName}-tasktype.json`, JSON.stringify(results.taskType, null, 2));
+    } else {
+      console.log(results);
+    }
+    return results;
+  }
+
+  public async handleDbRowTaskExtract(options: any): Promise<IInteractiveTaskExtractResult> {
+    const results: IInteractiveTaskExtractResult = await this.interactiveDbRowTaskService.promptTaskExtraction(options);
     if (options.json) {
       mkdirSync('./out', { recursive: true });
       writeFileSync(`./out/${results.taskType.taskJsonName}.json`, JSON.stringify(results.tasks, null, 2));

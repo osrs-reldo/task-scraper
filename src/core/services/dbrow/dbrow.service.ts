@@ -24,12 +24,15 @@ export class DBRowService {
   }
 
   public async findDBRows(tableId: number, searchString: string): Promise<DBRow[]> {
-    const rows: DBRow[] | undefined = await DBTable.loadRows(this.cacheProvider, tableId);
-    if (!rows) {
+    const rowIds = await DBTable.loadRowIDs(this.cacheProvider, tableId);
+    if (!rowIds) {
       return [];
     }
+    const settled = await Promise.allSettled(rowIds.map((id) => DBRow.load(this.cacheProvider, id)));
+    const rows: DBRow[] = settled.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
     rows.sort((a, b) => a.id - b.id);
     const lowerSearch = searchString.toLowerCase();
+
     const found: DBRow[] = rows.filter((dbrow) => {
       if (!dbrow.values || !Array.isArray(dbrow.values)) {
         return false;
