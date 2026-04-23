@@ -284,7 +284,7 @@ export class TasksCommand {
     const taskTypeName: string = options.type ?? 'LEAGUE_6';
 
     const tasksPath = path.join(taskJsonStoreDir, 'tasks', `${taskTypeName}.min.json`);
-    const locationsPath = path.join(taskJsonStoreDir, 'tasks', `${taskTypeName}.locations.json`);
+    const locationsPath = path.join(taskJsonStoreDir, 'custom-data', taskTypeName, 'locations.json');
 
     if (!existsSync(tasksPath)) {
       throw new Error(`Tasks file not found: ${tasksPath}`);
