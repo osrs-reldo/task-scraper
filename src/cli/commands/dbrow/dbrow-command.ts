@@ -22,6 +22,15 @@ export class DBRowCommand {
     console.log('total results', dbrows.length);
   }
 
+  public async handleGetByTable(tableId: number, rowId: number): Promise<void> {
+    const dbrow = await this.dbrowService.getDBRowByTable(tableId, rowId);
+    if (!dbrow) {
+      console.error('dbrow not found', { tableId, rowId });
+      return;
+    }
+    console.log(JSON.stringify(dbrow, replacer));
+  }
+
   public async handleDumpStrings(tableId: number, rowId: number): Promise<void> {
     const dbrow = await this.dbrowService.getDBRowByTable(tableId, rowId);
     if (!dbrow) {

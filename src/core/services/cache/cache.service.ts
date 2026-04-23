@@ -91,6 +91,21 @@ export class CacheService {
     }
   }
 
+  // Fetches a list of commits with their sha and date
+  public async listCommits(perPage = 30): Promise<Array<{ sha: string; date: string }>> {
+    const commitsUrl = `${GITHUB_API_URL}/${REPO_OWNER}/${REPO_NAME}/commits?per_page=${perPage}`;
+    try {
+      const response = await axios.get(commitsUrl);
+      return response.data.map((c: any) => ({
+        sha: c.sha as string,
+        date: (c.commit?.committer?.date ?? c.commit?.author?.date ?? '') as string,
+      }));
+    } catch (error) {
+      console.error(`Error fetching commits from ${commitsUrl}`, error);
+      throw error;
+    }
+  }
+
   // Validates if a commit hash exists in the repository
   public async validateCommitHash(commitHash: string): Promise<boolean> {
     const commitUrl = `${GITHUB_API_URL}/${REPO_OWNER}/${REPO_NAME}/commits/${commitHash}`;

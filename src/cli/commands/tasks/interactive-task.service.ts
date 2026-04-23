@@ -283,7 +283,7 @@ export class InteractiveTaskService {
         // unsure if 0 indexed so skip undefined values
         continue;
       }
-      const orderedEnumStructIds: Map<number, string | number> = (await this.enumService.getEnum(enumId)).map;
+      const orderedEnumStructIds: Map<number, string | number | bigint> = (await this.enumService.getEnum(enumId)).map;
       for (const structId of orderedEnumStructIds.values()) {
         orderedStructIds.push(structId as number);
       }

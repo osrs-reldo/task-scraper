@@ -24,7 +24,7 @@ export class CombatCommand {
 
     const difficultyEnums: number[] = [3981, 3982, 3983, 3984, 3985, 3986];
     for (const enumId of difficultyEnums) {
-      const orderedDifficultyStructIds: Map<number, string | number> = (await this.enumService.getEnum(enumId)).map;
+      const orderedDifficultyStructIds: Map<number, string | number | bigint> = (await this.enumService.getEnum(enumId)).map;
       for (const structId of orderedDifficultyStructIds.values()) {
         orderedStructIds.push(structId as number);
       }
