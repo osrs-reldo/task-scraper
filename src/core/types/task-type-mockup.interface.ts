@@ -111,6 +111,20 @@ export interface ITaskType {
    * `tasks` is the number of tasks required to reach this unlock tier
    */
   taskCompletionCountTiers: { varbitId: number; label: string; tasks: number; }[];
+
+  /**
+   * Wiki scrape configuration for the `tasks update-wiki` CLI command.
+   */
+  wikiConfig?: {
+    /** The wiki URL that lists all tasks for this task type. */
+    url: string;
+    /** The tr attribute that identifies each task row (e.g. "data-taskid"). */
+    taskIdAttribute: string;
+    /** 0-indexed column for completion percent. Null = not present on page. */
+    completionColumnId: number | null;
+    /** 0-indexed column for requirements/notes. Null = not present on page. */
+    requirementsColumnId: number | null;
+  };
 }
 
 /**

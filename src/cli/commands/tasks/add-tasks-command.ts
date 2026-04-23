@@ -49,10 +49,25 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
       await command.handleDbRowTaskExtract(options);
     });
 
+  const updateWiki = new Command('update-wiki')
+    .description('Update completion percent and wiki notes for a task type from the wiki, using the local task-json-store')
+    .option('--type <taskType>', 'Task type name (e.g., COMBAT, LEAGUE_6)')
+    .option('--wiki-url <url>', 'Wiki URL containing the tasks table')
+    .option('--task-id-attribute <attr>', 'The tr attribute that identifies the task id (e.g., data-taskid)', 'data-taskid')
+    .option('--completion-column <n>', '0-indexed column index for completion percent')
+    .option('--requirements-column <n>', '0-indexed column index for requirements/notes')
+    .option('--percent-only', 'only update completionPercent; leave skills and wikiNotes unchanged', false)
+    .option('--json', 'output to json file in ./out/', false)
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleUpdateWikiData(options);
+    });
+
   program
     .command(commandName)
     .description('data operations related to tasks')
     .addCommand(updateVarps)
+    .addCommand(updateWiki)
     .addCommand(combatCommand)
     .addCommand(extract)
     .addCommand(extractDbRow)
