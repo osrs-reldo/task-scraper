@@ -253,9 +253,8 @@ export class InteractiveDbRowTaskService {
       }
       const task: ITask = {
         structId: undefined, // not applicable for dbrow tasks
-        sortId: tasks.length,
         dbRowId: dbrowId,
-        id: tasks.length, // flat positional index for bitmask completion
+        sortId: tasks.length, // flat positional index for bitmask completion
       } as any; // extended fields beyond base ITask
 
       tasks.push(task);

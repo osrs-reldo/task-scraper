@@ -51,11 +51,11 @@ export class WikiService {
   private mergeSkills(existing: ITaskSkill[], incoming: ITaskSkill[]): ITaskSkill[] {
     const merged = new Map<string, number>();
     for (const entry of existing) {
-      if (!entry?.skill) continue;
+      if (!entry?.skill || entry.level == null || Number.isNaN(entry.level)) continue;
       merged.set(entry.skill, Math.max(merged.get(entry.skill) ?? 0, entry.level));
     }
     for (const entry of incoming) {
-      if (!entry?.skill) continue;
+      if (!entry?.skill || entry.level == null || Number.isNaN(entry.level)) continue;
       merged.set(entry.skill, Math.max(merged.get(entry.skill) ?? 0, entry.level));
     }
     return Array.from(merged.entries())
@@ -156,17 +156,12 @@ export class WikiService {
             if (!SKILL_NAMES.has(skill)) continue;
 
             const levelString = $(scp).attr('data-level');
-            try {
-              const level = Number.parseInt(levelString);
-              skills.push({
-                skill,
-                level,
-              });
-            } catch (ex) {
-              console.error(
-                `unable to parse skill (${skill}) level "${levelString}" for task varbit index ${varbitIndex}' + )`,
-              );
+            const level = Number.parseInt(levelString);
+            if (Number.isNaN(level)) {
+              console.warn(`skipping skill (${skill}) with unparseable level "${levelString}" for task varbit index ${varbitIndex}`);
+              continue;
             }
+            skills.push({ skill, level });
           }
 
           // replace linebreaks in the cell with a space, so they're not appended to the previous line without a space
@@ -184,7 +179,13 @@ export class WikiService {
         let completionPercent: number = undefined;
         if (columnDefinitions.completionColumnId) {
           const completionCell = cells[columnDefinitions.completionColumnId];
-          completionPercent = Number.parseFloat($(completionCell).text().replace('%', ''));
+          const cellText = $(completionCell).text().trim();
+          if (cellText.startsWith('<')) {
+            completionPercent = 0.1;
+          } else {
+            const parsed = Number.parseFloat(cellText.replace('%', ''));
+            completionPercent = Number.isNaN(parsed) ? undefined : parsed;
+          }
         }
 
         const taskData: ITaskWikiData = {
