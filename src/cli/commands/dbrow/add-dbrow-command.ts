@@ -21,6 +21,13 @@ export function addDBRowCommand(commandName: string, program: RootCommand): void
       await command.handleFind(tableId, searchString);
     });
 
+  const searchAll = new Command('search-all')
+    .argument('<search-string>', 'string to search for across all database tables')
+    .action(async (searchString: string, _options: any) => {
+      const command: DBRowCommand = await getCommandInstance(DBRowCommand, DBRowCommandModule);
+      await command.handleSearchAll(searchString);
+    });
+
   const getByTableId = new Command('get-by-table-id')
     .argument('<table-id>', 'database table id', ArgumentValidator.isNumber)
     .argument('<row-id>', 'database row id within the table', ArgumentValidator.isNumber)
@@ -43,5 +50,6 @@ export function addDBRowCommand(commandName: string, program: RootCommand): void
     .addCommand(get)
     .addCommand(getByTableId)
     .addCommand(find)
+    .addCommand(searchAll)
     .addCommand(dumpStrings);
 }

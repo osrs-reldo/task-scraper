@@ -40,11 +40,46 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
       const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
       await command.handleGenerateFrontendTasks(jsonFilename, nameParamId, descriptionParamId);
     });
+  const extractDbRow = new Command('extract-dbrow')
+    .description('extracts tasks from dbrows using an interactive prompt, sourced from a given enum')
+    .option('--enum-id <enumId>', 'the enum id containing dbrow ids')
+    .option('--json', 'output to json file')
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleDbRowTaskExtract(options);
+    });
+
+  const joinLocation = new Command('join-location')
+    .description('Joins location data from a .locations.json onto a .min.json that lacks it')
+    .option('--type <taskType>', 'Task type name (e.g., LEAGUE_6)', 'LEAGUE_6')
+    .option('--json', 'output to json file in ./out/', false)
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleJoinLocation(options);
+    });
+
+  const updateWiki = new Command('update-wiki')
+    .description('Update completion percent and wiki notes for a task type from the wiki, using the local task-json-store')
+    .option('--type <taskType>', 'Task type name (e.g., COMBAT, LEAGUE_6)')
+    .option('--wiki-url <url>', 'Wiki URL containing the tasks table')
+    .option('--task-id-attribute <attr>', 'The tr attribute that identifies the task id (e.g., data-taskid)', 'data-taskid')
+    .option('--completion-column <n>', '0-indexed column index for completion percent')
+    .option('--requirements-column <n>', '0-indexed column index for requirements/notes')
+    .option('--percent-only', 'only update completionPercent; leave skills and wikiNotes unchanged', false)
+    .option('--json', 'output to json file in ./out/', false)
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleUpdateWikiData(options);
+    });
+
   program
     .command(commandName)
     .description('data operations related to tasks')
     .addCommand(updateVarps)
+    .addCommand(updateWiki)
+    .addCommand(joinLocation)
     .addCommand(combatCommand)
     .addCommand(extract)
+    .addCommand(extractDbRow)
     .addCommand(generateFrontendTasks);
 }

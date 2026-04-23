@@ -49,7 +49,7 @@ export class ScriptService {
     try {
       const archives = await this.cacheProvider.getArchives(ScriptService.CLIENTSCRIPTS_ARCHIVE_ID);
       return archives || [];
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting script IDs:', error);
       return [];
     }
@@ -67,7 +67,7 @@ export class ScriptService {
 
       const file = archive.getFile(0); // Scripts typically have a single file with ID 0
       return file?.data || null;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error getting script data for ID ${scriptId}:`, error);
       return null;
     }
@@ -125,7 +125,7 @@ export class ScriptService {
     }
 
     // Validate the parsed values
-    if (codeLength < 0 || codeLength > 100000) {
+    if (codeLength < 0 || codeLength == 0) {
       throw new Error(`Invalid code length for script ${scriptId}: ${codeLength}`);
     }
     
@@ -166,7 +166,8 @@ export class ScriptService {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.warn(`Error reading script name for script ${scriptId}:`, error.message);
       // If we can't read a string, there's probably no name
       name = undefined;
     }
@@ -209,7 +210,7 @@ export class ScriptService {
         if (meta) {
           metadata.push(meta);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.warn(`Error getting metadata for script ${scriptId}:`, error.message);
         // Continue processing other scripts
       }
@@ -279,7 +280,7 @@ export class ScriptService {
           console.warn(`Too many instructions parsed for script ${metadata.id}, stopping at ${instructionIndex}`);
           break;
         }
-      } catch (error) {
+      } catch (error: any) {
         console.warn(`Error parsing instruction at offset ${reader.offset} for script ${metadata.id}:`, error.message);
         break;
       }
@@ -365,7 +366,7 @@ export class ScriptService {
         // Default case uses g1() (8-bit unsigned)
         return reader.u8();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn(`Error parsing operand for opcode ${opcode}:`, error.message);
       return undefined;
     }
