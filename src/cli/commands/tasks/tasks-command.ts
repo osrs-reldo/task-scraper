@@ -278,4 +278,42 @@ export class TasksCommand {
 
     console.log('✨ Wiki data update complete!');
   }
+
+  public async handleJoinLocation(options: any): Promise<void> {
+    const taskJsonStoreDir = path.resolve(process.cwd(), '../task-json-store');
+    const taskTypeName: string = options.type ?? 'LEAGUE_6';
+
+    const tasksPath = path.join(taskJsonStoreDir, 'tasks', `${taskTypeName}.min.json`);
+    const locationsPath = path.join(taskJsonStoreDir, 'tasks', `${taskTypeName}.locations.json`);
+
+    if (!existsSync(tasksPath)) {
+      throw new Error(`Tasks file not found: ${tasksPath}`);
+    }
+    if (!existsSync(locationsPath)) {
+      throw new Error(`Locations file not found: ${locationsPath}`);
+    }
+
+    const tasks: any[] = JSON.parse(readFileSync(tasksPath, 'utf-8'));
+    const locationEntries: { dbRowId: number; location: { x: number; y: number; plane: number } }[] =
+      JSON.parse(readFileSync(locationsPath, 'utf-8'));
+
+    const locationByDbRowId = new Map(locationEntries.map((l) => [l.dbRowId, l.location]));
+
+    const merged = tasks.map((task) => {
+      const location = locationByDbRowId.get(task.dbRowId);
+      return location ? { ...task, location } : task;
+    });
+
+    const matched = merged.filter((t) => t.location).length;
+    console.log(`✅ Joined location data onto ${matched} / ${merged.length} tasks`);
+
+    if (options.json) {
+      mkdirSync('./out', { recursive: true });
+      const outPath = `./out/${taskTypeName}.min.json`;
+      writeFileSync(outPath, JSON.stringify(merged));
+      console.log(`💾 Written to ${outPath}`);
+    } else {
+      console.log(JSON.stringify(merged, null, 2));
+    }
+  }
 }

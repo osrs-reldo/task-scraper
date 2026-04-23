@@ -49,6 +49,15 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
       await command.handleDbRowTaskExtract(options);
     });
 
+  const joinLocation = new Command('join-location')
+    .description('Joins location data from a .locations.json onto a .min.json that lacks it')
+    .option('--type <taskType>', 'Task type name (e.g., LEAGUE_6)', 'LEAGUE_6')
+    .option('--json', 'output to json file in ./out/', false)
+    .action(async (options: any) => {
+      const command: TasksCommand = await getCommandInstance(TasksCommand, TasksCommandModule);
+      await command.handleJoinLocation(options);
+    });
+
   const updateWiki = new Command('update-wiki')
     .description('Update completion percent and wiki notes for a task type from the wiki, using the local task-json-store')
     .option('--type <taskType>', 'Task type name (e.g., COMBAT, LEAGUE_6)')
@@ -68,6 +77,7 @@ export function addTasksCommand(commandName: string, program: RootCommand): void
     .description('data operations related to tasks')
     .addCommand(updateVarps)
     .addCommand(updateWiki)
+    .addCommand(joinLocation)
     .addCommand(combatCommand)
     .addCommand(extract)
     .addCommand(extractDbRow)
