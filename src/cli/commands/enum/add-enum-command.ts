@@ -8,17 +8,19 @@ import { EnumCommandModule } from './enum-command.module';
 export function addEnumCommand(commandName: string, program: RootCommand): void {
   const get = new Command('get')
     .argument('<id>', 'enum id', ArgumentValidator.isNumber)
-    .action(async (id: number, _options: any) => {
+    .option('--json', 'dump enum to enum.<id>.json')
+    .action(async (id: number, options: { json?: boolean }) => {
       const command: EnumCommand = await getCommandInstance(EnumCommand, EnumCommandModule);
-      await command.handleGet(id);
+      await command.handleGet(id, options);
     });
 
   const getMany = new Command('get-many')
     .argument('<id-array>', 'array of ids', ArgumentValidator.isNumberArray)
-    .action(async (ids: number[], _options: any) => {
+    .option('--json', 'dump each enum to enum.<id>.json')
+    .action(async (ids: number[], options: { json?: boolean }) => {
       const command: EnumCommand = await getCommandInstance(EnumCommand, EnumCommandModule);
       for (const id of ids) {
-        await command.handleGet(id);
+        await command.handleGet(id, options);
       }
     });
 
