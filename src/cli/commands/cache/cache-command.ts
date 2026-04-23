@@ -35,5 +35,14 @@ export class CacheCommand {
       console.log('  No local cache found');
     }
   }
+
+  public async handleList(perPage: number): Promise<void> {
+    const commits = await this.cacheService.listCommits(perPage);
+    const localCommit = this.cacheService.getLocalCommitHash();
+    for (const { sha, date } of commits) {
+      const marker = sha === localCommit ? ' (local)' : '';
+      console.log(`${date}  ${sha}${marker}`);
+    }
+  }
 }
 

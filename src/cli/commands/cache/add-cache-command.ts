@@ -18,9 +18,17 @@ export function addCacheCommand(commandName: string, program: RootCommand): void
       await command.handleStatus();
     });
 
+  const list = new Command('list')
+    .option('-n, --per-page <n>', 'number of commits to show', '30')
+    .action(async (options: { perPage: string }) => {
+      const command: CacheCommand = await getCommandInstance(CacheCommand, CacheCommandModule);
+      await command.handleList(parseInt(options.perPage, 10));
+    });
+
   program.command(commandName)
     .description('operations related to the osrs cache')
     .addCommand(update)
-    .addCommand(status);
+    .addCommand(status)
+    .addCommand(list);
 }
 

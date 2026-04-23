@@ -28,6 +28,14 @@ export function addDBRowCommand(commandName: string, program: RootCommand): void
       await command.handleSearchAll(searchString);
     });
 
+  const getByTableId = new Command('get-by-table-id')
+    .argument('<table-id>', 'database table id', ArgumentValidator.isNumber)
+    .argument('<row-id>', 'database row id within the table', ArgumentValidator.isNumber)
+    .action(async (tableId: number, rowId: number, _options: any) => {
+      const command: DBRowCommand = await getCommandInstance(DBRowCommand, DBRowCommandModule);
+      await command.handleGetByTable(tableId, rowId);
+    });
+
   const dumpStrings = new Command('dump-strings')
     .argument('<table-id>', 'database table id', ArgumentValidator.isNumber)
     .argument('<row-id>', 'database row id within the table', ArgumentValidator.isNumber)
@@ -40,6 +48,7 @@ export function addDBRowCommand(commandName: string, program: RootCommand): void
     .command(commandName)
     .description('data operations related to database rows')
     .addCommand(get)
+    .addCommand(getByTableId)
     .addCommand(find)
     .addCommand(searchAll)
     .addCommand(dumpStrings);

@@ -28,6 +28,15 @@ export class DBRowCommand {
     const totalRows = results.reduce((sum, r) => sum + r.rows.length, 0);
     console.log(`found ${totalRows} rows across ${results.length} tables`);
   }
+  
+  public async handleGetByTable(tableId: number, rowId: number): Promise<void> {
+    const dbrow = await this.dbrowService.getDBRowByTable(tableId, rowId);
+    if (!dbrow) {
+      console.error('dbrow not found', { tableId, rowId });
+      return;
+    }
+    console.log(JSON.stringify(dbrow, replacer));
+  }
 
   public async handleDumpStrings(tableId: number, rowId: number): Promise<void> {
     const dbrow = await this.dbrowService.getDBRowByTable(tableId, rowId);
