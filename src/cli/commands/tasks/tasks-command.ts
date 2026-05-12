@@ -649,12 +649,15 @@ export class TasksCommand {
   public async handleUpdateVarps(options: any): Promise<ITaskType> {
     console.log('🔧 Updating task varps...');
     
-    const taskTypesUrl = 'https://raw.githubusercontent.com/osrs-reldo/task-json-store/refs/heads/main/task-types.json';
-    
-    // Load task-type definitions from GitHub
-    console.log(`📡 Fetching task-types from ${taskTypesUrl}...`);
-    const response = await axios.get(taskTypesUrl);
-    const taskTypes: ITaskType[] = response.data;
+    const taskJsonStoreDir = path.resolve(process.cwd(), '../task-json-store');
+    const taskTypesPath = path.join(taskJsonStoreDir, 'task-types.json');
+
+    if (!existsSync(taskTypesPath)) {
+      throw new Error(`task-types.json not found at ${taskTypesPath}. Run from task-scraper/ directory.`);
+    }
+
+    console.log(`📄 Reading task-types from ${taskTypesPath}...`);
+    const taskTypes: ITaskType[] = JSON.parse(readFileSync(taskTypesPath, 'utf-8'));
     
     let taskTypeDefinition: ITaskType | undefined;
     
