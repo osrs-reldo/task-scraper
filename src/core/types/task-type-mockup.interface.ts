@@ -113,6 +113,19 @@ export interface ITaskType {
   taskCompletionCountTiers: { varbitId: number; label: string; tasks: number; }[];
 
   /**
+   * How tasks are sourced from the cache.
+   * STRUCT = task structs (Combat Achievements style)
+   * DBROW = DB table rows referenced by an enum (Leagues style)
+   */
+  taskSourceType?: 'STRUCT' | 'DBROW';
+
+  /**
+   * For DBROW task types: the enum ID whose values are the dbrow IDs, ordered by sortId.
+   * Used by `tasks generate` to build the task list non-interactively.
+   */
+  dbRowEnumId?: number;
+
+  /**
    * Wiki scrape configuration for the `tasks update-wiki` CLI command.
    */
   wikiConfig?: {

@@ -4,12 +4,13 @@ import { EnumServiceModule } from '../../../core/services/enum/enum-service.modu
 import { StructServiceModule } from '../../../core/services/struct/struct-service.module';
 import { WikiServiceModule } from '../../../core/services/wiki/wiki-service.module';
 import { ScriptServiceModule } from '../../../core/services/script/script-service.module';
+import { GameValServiceModule } from '../../../core/services/gameval/gameval-service.module';
 import { InteractiveDbRowTaskService } from './interactive-dbrow-task.service';
 import { InteractiveTaskService } from './interactive-task.service';
 import { TasksCommand } from './tasks-command';
 
 @Module({
-  imports: [StructServiceModule, EnumServiceModule, WikiServiceModule, ScriptServiceModule, DBRowServiceModule],
+  imports: [StructServiceModule, EnumServiceModule, WikiServiceModule, ScriptServiceModule, DBRowServiceModule, GameValServiceModule],
   providers: [TasksCommand, InteractiveTaskService, InteractiveDbRowTaskService],
 })
 export class TasksCommandModule {}

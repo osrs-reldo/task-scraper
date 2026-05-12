@@ -101,13 +101,13 @@ export class EditorService {
     const tasksWithParams: TaskRow[] = await Promise.all(
       tasks.map(async (task) => {
         const struct = await this.structService.getStruct(task.structId);
-        const params: Record<string, string | number | null> = {};
+        const params: Record<string, string | number | bigint | null> = {};
         for (const [key, paramId] of Object.entries(paramMap)) {
           const value = struct.params.get(paramId as any);
           params[key] = value ?? null;
         }
 
-        const enumValues: Record<string, string | number | null> = {};
+        const enumValues: Record<string, string | number | bigint | null> = {};
         for (const [key, enumId] of Object.entries(enumMap)) {
           const paramId = paramMap[key];
           const rawValue = paramId ? struct.params.get(paramId as any) : undefined;
