@@ -8,10 +8,12 @@ import { GameValServiceModule } from '../../../core/services/gameval/gameval-ser
 import { InteractiveDbRowTaskService } from './interactive-dbrow-task.service';
 import { InteractiveTaskService } from './interactive-task.service';
 import { TasksCommand } from './tasks-command';
+import { BossKcVarpsCommand } from './subcommands/boss-kc-varps-command';
+import { VarbitMappingCommand } from './subcommands/varbit-mapping-command';
 
 @Module({
   imports: [StructServiceModule, EnumServiceModule, WikiServiceModule, ScriptServiceModule, DBRowServiceModule, GameValServiceModule],
-  providers: [TasksCommand, InteractiveTaskService, InteractiveDbRowTaskService],
+  providers: [TasksCommand, InteractiveTaskService, InteractiveDbRowTaskService, BossKcVarpsCommand, VarbitMappingCommand],
 })
 export class TasksCommandModule {}
 
