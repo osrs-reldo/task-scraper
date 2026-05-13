@@ -1,9 +1,9 @@
 import { DBRow, ParamID } from "@abextm/cache2";
 import { Injectable } from "@nestjs/common";
-import { DBRowService } from "src/core/services/dbrow/dbrow.service";
-import { GameValService } from "src/core/services/gameval/gameval.service";
-import { ScriptService } from "src/core/services/script/script.service";
-import { StructService } from "src/core/services/struct/struct.service";
+import { DBRowService } from "../../../../core/services/dbrow/dbrow.service";
+import { GameValService } from "../../../../core/services/gameval/gameval.service";
+import { ScriptService } from "../../../../core/services/script/script.service";
+import { StructService } from "../../../../core/services/struct/struct.service";
 
 export type BossKcMapEntry = { varpId: number; target: number; dbRowId: number };
 export type BossKcMapResult = { mapEntries: BossKcMapEntry[]; skipped: number };

@@ -1,8 +1,8 @@
 import { DBRow } from "@abextm/cache2";
 import { Injectable } from "@nestjs/common";
 import { mkdirSync, writeFileSync } from "fs";
-import { InteractivePrompt } from "src/cli/interactive-prompt.util";
-import { GameValService } from "src/core/services/gameval/gameval.service";
+import { InteractivePrompt } from "../../../../cli/interactive-prompt.util";
+import { GameValService } from "../../../../core/services/gameval/gameval.service";
 
 export type VarbitMapEntry = { varbitName: string; varbitId: number; target: number; dbRowId: number };
 
