@@ -2,6 +2,7 @@ import { DBRow } from "@abextm/cache2";
 import { Injectable } from "@nestjs/common";
 import { mkdirSync, writeFileSync } from "fs";
 import { InteractivePrompt } from "../../../../cli/interactive-prompt.util";
+import { DBRowService } from "../../../../core/services/dbrow/dbrow.service";
 import { GameValService } from "../../../../core/services/gameval/gameval.service";
 
 export type VarbitMapEntry = { varbitName: string; varbitId: number; target: number; dbRowId: number };
@@ -10,7 +11,7 @@ export type VarbitMapEntry = { varbitName: string; varbitId: number; target: num
 export class VarbitMappingCommand {
     constructor(
         private gameValService: GameValService,
-        private dbrowService: any,
+        private dbrowService: DBRowService,
     ) { }
 
     public async mapVarbits(tasks: any[], taskTypeName: string, toReview: boolean = false): Promise<VarbitMapEntry[]> {
