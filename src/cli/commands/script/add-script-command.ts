@@ -19,7 +19,7 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
       try {
         const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
         await scriptCommand.handleList(options);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error executing script list command:', error);
         process.exit(1);
       }
@@ -45,7 +45,7 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
 
         const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
         await scriptCommand.handleShow(scriptId, options);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error executing script show command:', error);
         process.exit(1);
       }
@@ -59,7 +59,7 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
       try {
         const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
         await scriptCommand.handleSearch(searchTerm, options);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error executing script search command:', error);
         process.exit(1);
       }
@@ -75,7 +75,7 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
       try {
         const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
         await scriptCommand.handleIds(options);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error executing script ids command:', error);
         process.exit(1);
       }
@@ -99,7 +99,7 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
 
         const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
         await scriptCommand.handleDecompile(scriptId, options);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error executing script decompile command:', error);
         process.exit(1);
       }
@@ -122,7 +122,7 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
 
         const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
         await scriptCommand.handleAnalyze(scriptId, options);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error executing script analyze command:', error);
         process.exit(1);
       }
@@ -142,7 +142,7 @@ export function addScriptCommand(commandName: string, program: RootCommand): voi
 
         const scriptCommand: ScriptCommand = await getCommandInstance(ScriptCommand, ScriptCommandModule);
         await scriptCommand.handleGet(scriptId, options);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error executing script get command:', error);
         process.exit(1);
       }

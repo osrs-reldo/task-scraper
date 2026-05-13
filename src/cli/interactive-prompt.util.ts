@@ -3,11 +3,12 @@ import { readdirSync } from 'fs-extra';
 import { ISelectOption } from './select-option.interface';
 
 export class InteractivePrompt {
-  public static async select<T>(message: string, choices: ISelectOption<T>[]): Promise<T> {
+  public static async select<T>(message: string, choices: ISelectOption<T>[], defaultValue?: T): Promise<T> {
     const answers = await select({
       message,
       choices,
       loop: false,
+      default: defaultValue
     });
 
     return answers;

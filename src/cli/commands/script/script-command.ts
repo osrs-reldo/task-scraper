@@ -187,7 +187,7 @@ export class ScriptCommand {
         console.log(`"taskVarps": [${analysis.varps.join(', ')}]`);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.log(`❌ Failed to analyze script ${scriptId}:`, error.message);
     }
   }
@@ -221,7 +221,7 @@ export class ScriptCommand {
       writeFileSync(fileName, rs2asm);
       console.log(`✅ Script saved to ${fileName}`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.log(`❌ Failed to get script ${scriptId}:`, error.message);
     }
   }

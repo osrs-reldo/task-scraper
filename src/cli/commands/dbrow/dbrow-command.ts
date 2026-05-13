@@ -22,6 +22,13 @@ export class DBRowCommand {
     console.log('total results', dbrows.length);
   }
 
+  public async handleSearchAll(searchString: string): Promise<void> {
+    const results = await this.dbrowService.searchAllTables(searchString);
+    console.log(JSON.stringify(results, replacer));
+    const totalRows = results.reduce((sum, r) => sum + r.rows.length, 0);
+    console.log(`found ${totalRows} rows across ${results.length} tables`);
+  }
+  
   public async handleGetByTable(tableId: number, rowId: number): Promise<void> {
     const dbrow = await this.dbrowService.getDBRowByTable(tableId, rowId);
     if (!dbrow) {

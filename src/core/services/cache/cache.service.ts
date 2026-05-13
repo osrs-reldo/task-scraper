@@ -24,7 +24,7 @@ export class CacheService {
     try {
       const response = await axios.get(url);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error fetching repository contents from ${url}`, error);
       throw error;
     }
@@ -36,7 +36,7 @@ export class CacheService {
       const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
       fs.writeFileSync(filePath, new Uint8Array(response.data));
       console.log(`Downloaded file: ${filePath}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error downloading file from ${fileUrl}`, error);
       throw error;
     }
@@ -73,7 +73,7 @@ export class CacheService {
       console.log(`Starting repository download${commitHash ? ` for commit ${commitHash}` : ''}...`);
       await this.downloadRepoContents('', targetDir, commitHash);
       console.log('Repository download complete.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to download the repository:', error);
       throw error;
     }
@@ -85,7 +85,7 @@ export class CacheService {
     try {
       const response = await axios.get(commitsUrl);
       return response.data[0].sha; // Get the latest commit hash
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error fetching latest commit from ${commitsUrl}`, error);
       throw error;
     }
@@ -112,7 +112,7 @@ export class CacheService {
     try {
       await axios.get(commitUrl);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 404 || error.response?.status === 422) {
         return false;
       }
