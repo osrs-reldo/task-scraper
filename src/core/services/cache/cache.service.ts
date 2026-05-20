@@ -11,6 +11,11 @@ const versionFilePath = path.join('./osrs-cache', 'cache-version.txt');
 
 @Injectable()
 export class CacheService {
+  private getAuthHeaders(): Record<string, string> {
+    const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   public async updateCache(targetCommitHash?: string): Promise<void> {
     const commitToUse = targetCommitHash || await this.getLatestCommitHash();
     await this.downloadRepository(commitToUse);
@@ -22,7 +27,7 @@ export class CacheService {
     const refParam = commitHash ? `?ref=${commitHash}` : '';
     const url = `${GITHUB_API_URL}/${REPO_OWNER}/${REPO_NAME}/contents/${repoPath}${refParam}`;
     try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, { headers: this.getAuthHeaders() });
       return response.data;
     } catch (error: any) {
       console.error(`Error fetching repository contents from ${url}`, error);
@@ -33,7 +38,7 @@ export class CacheService {
   // Downloads a file from the GitHub repo and saves it locally
   private async downloadFile(fileUrl: string, filePath: string): Promise<void> {
     try {
-      const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+      const response = await axios.get(fileUrl, { responseType: 'arraybuffer', headers: this.getAuthHeaders() });
       fs.writeFileSync(filePath, new Uint8Array(response.data));
       console.log(`Downloaded file: ${filePath}`);
     } catch (error: any) {
@@ -83,7 +88,7 @@ export class CacheService {
   public async getLatestCommitHash(): Promise<string> {
     const commitsUrl = `${GITHUB_API_URL}/${REPO_OWNER}/${REPO_NAME}/commits`;
     try {
-      const response = await axios.get(commitsUrl);
+      const response = await axios.get(commitsUrl, { headers: this.getAuthHeaders() });
       return response.data[0].sha; // Get the latest commit hash
     } catch (error: any) {
       console.error(`Error fetching latest commit from ${commitsUrl}`, error);
@@ -95,7 +100,7 @@ export class CacheService {
   public async listCommits(perPage = 30): Promise<Array<{ sha: string; date: string }>> {
     const commitsUrl = `${GITHUB_API_URL}/${REPO_OWNER}/${REPO_NAME}/commits?per_page=${perPage}`;
     try {
-      const response = await axios.get(commitsUrl);
+      const response = await axios.get(commitsUrl, { headers: this.getAuthHeaders() });
       return response.data.map((c: any) => ({
         sha: c.sha as string,
         date: (c.commit?.committer?.date ?? c.commit?.author?.date ?? '') as string,
@@ -110,7 +115,7 @@ export class CacheService {
   public async validateCommitHash(commitHash: string): Promise<boolean> {
     const commitUrl = `${GITHUB_API_URL}/${REPO_OWNER}/${REPO_NAME}/commits/${commitHash}`;
     try {
-      await axios.get(commitUrl);
+      await axios.get(commitUrl, { headers: this.getAuthHeaders() });
       return true;
     } catch (error: any) {
       if (error.response?.status === 404 || error.response?.status === 422) {
