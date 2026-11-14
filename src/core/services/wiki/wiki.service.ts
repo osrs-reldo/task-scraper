@@ -31,7 +31,9 @@ export class WikiService {
     for (const taskWikiData of extractedWikiData) {
       const task: ITask = tasksByVarbitIndex.get(taskWikiData.varbitIndex);
       if (!task) {
-        throw new Error('task not found by varbit index ' + taskWikiData.varbitIndex);
+        // The wiki can list tasks the cache does not have (a newer release, or running against an older cache)
+        console.warn('task not found by varbit index ' + taskWikiData.varbitIndex + ', skipping');
+        continue;
       }
       if (taskWikiData.skills) {
         task.skills = this.mergeSkills(task.skills ?? [], taskWikiData.skills);
